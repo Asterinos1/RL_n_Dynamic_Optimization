@@ -1,4 +1,5 @@
 import random
+import numpy as nm
 import time
 
 class User:
@@ -45,27 +46,58 @@ def generate_users(num_users):
 if __name__ == "__main__":
     num_users = 10000  # Change this to the desired number of users
     
-    '''
-    all_users, above_25_users, below_25_users = generate_users(num_users)
+    T = 1000
+    #We have K = 5 arms.
     
-
-    # Count the number of users based on gender and age categories
-    male_above_25_count = sum(1 for user in above_25_users if user.gender == 'male')
-    female_above_25_count = sum(1 for user in above_25_users if user.gender == 'female')
-    male_below_25_count = sum(1 for user in below_25_users if user.gender == 'male')
-    female_below_25_count = sum(1 for user in below_25_users if user.gender == 'female')
-
-    # Print the results
-    print("Male with age above 25:", male_above_25_count)
-    print("Female with age above 25:", female_above_25_count)
-    print("Male with age below 25:", male_below_25_count)
-    print("Female with age below 25:", female_below_25_count)
+    rewards_of_arm_i = {} #key is the arm
     
-    # Print the first 10 users
-    for i, user in enumerate(all_users[:100]):
-        print(f"User {i+1}: Gender: {user.gender}, Age: {user.age}")
-    '''
-    #We care for all_users only, there others are for debugging purposes.
-    #all_users, above_25_users, below_25_users = generate_users(num_users)
-    all_users = generate_users(num_users)
-    print(all_users[2].gender)
+    rewards_dic = {}
+    
+    for i in range(100):
+        # Generate a random number between 0 and 1
+        random_number = random.random()
+
+        # Determine the value based on the random number
+        if random_number < 0.5:
+            value = 0
+        else:
+            value = 1
+            
+        rewards_dic[i] = value
+        
+    #let's calculate the mean.
+    
+    #Get the denominator.
+    times_arm_i_was_selected = 0
+    
+    
+    
+    for index, value in rewards_dic.items():
+        if(value==1):
+            times_arm_i_was_selected+=1
+            
+    nominator = times_arm_i_was_selected
+    
+    mean_estimate_m = nominator-5/times_arm_i_was_selected
+    mean_estimate_N = times_arm_i_was_selected
+    print(mean_estimate_m)
+    #print(rewards_dic)
+    #print(f"This arm was selected {times_arm_i_was_selected} times.")
+    
+    upper_confidence_bound = mean_estimate_m + nm.sqrt((2*nm.log(T))/mean_estimate_N)
+    
+    
+    print(upper_confidence_bound)
+    
+    ucb_list = [28.94, 15.72, 83.05, 44.19, 7.63, 90.12, 55.38, 36.87, 71.56, 9.82]
+    
+    print(f"Current UCB list: {ucb_list}")
+    
+    best_arm = ucb_list[0]
+    
+    for i in ucb_list:
+        if i>best_arm:
+            best_arm=i
+    
+    print(best_arm)
+    
