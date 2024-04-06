@@ -4,8 +4,7 @@ import matplotlib.pyplot as plt
 
 class UCBAlgorithm:
     """
-    This class implements the UCB algorithm, which is a popular strategy for
-    balancing exploration and exploitation in multi-armed bandit problems.
+    This class implements the UCB algorithm.
     The algorithm maintains estimates of the expected rewards for each arm
     and uses these estimates to select the arm with the highest Upper Confidence
     Bound (UCB) value at each round.
