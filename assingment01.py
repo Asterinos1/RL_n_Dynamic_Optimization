@@ -1,128 +1,118 @@
-import numpy as np
+import math
+import random
 import matplotlib.pyplot as plt
 
-class UCBAlgorithm:
-    """
-    This class implements the UCB algorithm.
-    The algorithm maintains estimates of the expected rewards for each arm
-    and uses these estimates to select the arm with the highest Upper Confidence
-    Bound (UCB) value at each round.
+# This code is a modification of Kenneth Foo Fangwei's code
+# Adjusted to the exercises characteristics.
+# https://kfoofw.github.io/bandit-theory-ucb-analysis/
 
-    Parameters:
-    - num_articles (int): The number of arms (articles) in the multi-armed bandit.
+# UCB1 algorithm class
+class UCB1():
+    def __init__(self, counts, values):
+        self.counts = counts
+        self.values = values
+    
+    def initialize(self, n_arms):
+        self.counts = [0 for _ in range(n_arms)]
+        self.values = [0.0 for _ in range(n_arms)]
+    
+    def select_arm(self):
+        n_arms = len(self.counts)
+        for arm in range(n_arms):
+            if self.counts[arm] == 0:
+                return arm
+        
+        ucb_values = [0.0 for _ in range(n_arms)]
+        total_counts = sum(self.counts)
+        
+        for arm in range(n_arms):
+            bonus = math.sqrt((2 * math.log(total_counts)) / float(self.counts[arm]))
+            ucb_values[arm] = self.values[arm] + bonus
+        
+        return ucb_values.index(max(ucb_values))
+    
+    def update(self, chosen_arm, reward):
+        self.counts[chosen_arm] += 1
+        n = self.counts[chosen_arm]
+        value = self.values[chosen_arm]
+        new_value = ((n - 1) / float(n)) * value + (1 / float(n)) * reward
+        self.values[chosen_arm] = new_value
 
-    Methods:
-    - get_ucb(article_index, total_rounds):
-        Computes the Upper Confidence Bound (UCB) value for a given arm at
-        the current round based on its historical rewards and exploration bonus.
-        Parameters:
-        * article_index (int): The index of the arm for which to compute the UCB value.
-        * total_rounds (int): The total number of rounds completed so far.
-        Returns:
-        * ucb_value (float): The UCB value for the specified arm.
+# Bernoulli arm class
+class BernoulliArm():
+    def __init__(self, p):
+        self.p = p
+    
+    def draw(self):
+        if random.random() > self.p:
+            return 0.0
+        else:
+            return 1.0
 
-    - select_article(total_rounds):
-        Selects the arm with the highest Upper Confidence Bound (UCB) value
-        at the current round.
-        Parameters:
-        * total_rounds (int): The total number of rounds completed so far.
-        Returns:
-        * selected_article (int): The index of the arm selected for this round.
+# Define parameters
+num_sims = 1
+horizon = 10000  # Adjust the horizon as needed for a single simulation
 
-    - update(article_index, reward):
-        Updates the historical records of rewards for the selected arm based on
-        the observed reward in the current round.
-        Parameters:
-        * article_index (int): The index of the arm selected for this round.
-        * reward (int): The reward obtained by selecting the specified arm.
-    """
-    def __init__(self, num_articles):
-        self.num_articles = num_articles
-        self.num_selections = np.zeros(num_articles)
-        self.sum_rewards = np.zeros(num_articles)
-        self.total_reward = 0
-        self.cumulative_reward = []
+# Define arms with their corresponding click probabilities
+arms = [BernoulliArm(0.8), BernoulliArm(0.6), BernoulliArm(0.5), BernoulliArm(0.4), BernoulliArm(0.2)]
 
-    def get_ucb(self, article_index, total_rounds):
-        if self.num_selections[article_index] == 0:
-            return float('inf')  # Select unselected articles first
-        avg_reward = self.sum_rewards[article_index] / self.num_selections[article_index]
-        exploration_bonus = np.sqrt(2 * np.log(total_rounds) / self.num_selections[article_index])
-        return avg_reward + exploration_bonus
+# Initialize UCB1 algorithm
+ucb = UCB1([], [])
 
-    def select_article(self, total_rounds):
-        ucb_values = [self.get_ucb(i, total_rounds) for i in range(self.num_articles)]
-        return np.argmax(ucb_values)
+# Function to simulate the algorithm
+def test_algorithm(algo, arms, num_sims, horizon):
+    chosen_arms = [0 for _ in range(num_sims * horizon)]
+    rewards = [0.0 for _ in range(num_sims * horizon)]
+    cumulative_rewards = [0.0 for _ in range(num_sims * horizon)]
+    cumulative_regret = [0.0 for _ in range(num_sims * horizon)]
+    sim_nums = [0 for _ in range(num_sims * horizon)]
+    times = [0 for _ in range(num_sims * horizon)]
+    
+    for sim in range(num_sims):
+        algo.initialize(len(arms))
+        for t in range(horizon):
+            index = sim * horizon + t
+            sim_nums[index] = sim
+            times[index] = t + 1
+            
+            # Select arm using UCB1 algorithm
+            chosen_arm = algo.select_arm()
+            chosen_arms[index] = chosen_arm
+            
+            # Draw reward from selected arm
+            reward = arms[chosen_arm].draw()
+            rewards[index] = reward
+            
+            if t == 0:
+                cumulative_rewards[index] = reward
+            else:
+                cumulative_rewards[index] = cumulative_rewards[index - 1] + reward
+            
+            # Calculate regret
+            optimal_reward = max(arm.p for arm in arms)
+            cumulative_regret[index] = (t + 1) * optimal_reward - cumulative_rewards[index]
+            
+            # Update algorithm with chosen arm and reward
+            algo.update(chosen_arm, reward)
+    
+    return sim_nums, times, chosen_arms, rewards, cumulative_rewards, cumulative_regret
 
-    def update(self, article_index, reward):
-        self.num_selections[article_index] += 1
-        self.sum_rewards[article_index] += reward
-        self.total_reward += reward
-        self.cumulative_reward.append(self.total_reward)
+# Simulate the algorithm
+sim_nums, times, chosen_arms, rewards, cumulative_rewards, cumulative_regret = test_algorithm(ucb, arms, num_sims, horizon)
 
-# Defining user-news preferences
-preferences = {
-    'female_over_25': [0.8, 0.6, 0.5, 0.4, 0.2],
-    'male_over_25': [0.2, 0.4, 0.5, 0.6, 0.8],
-    'under_25': [0.2, 0.4, 0.8, 0.6, 0.5]
-}
+# Plot results
+plt.figure(figsize=(10, 6))
 
-# Define optimal rewards for each article based on the highest click probability
-optimal_rewards = [max(preferences[key]) for key in preferences]
+# Plot cumulative regret and reward
+plt.plot(range(num_sims * horizon), cumulative_regret, label='Cumulative Regret', color='red')
+plt.plot(range(num_sims * horizon), cumulative_rewards, label='Cumulative Reward', color='blue')
 
-# Define number of articles and total rounds
-num_articles = 5
-total_rounds = 1000
+# Plot linear function f(x)=x
+plt.plot(range(num_sims * horizon), [t + 1 for t in range(num_sims * horizon)], linestyle='--', label='f(x) = x', color='green')
 
-# Initialize UCB algorithm
-ucb_algorithm = UCBAlgorithm(num_articles)
-
-# Track cumulative regret and cumulative reward
-cumulative_regret = []
-cumulative_reward = []
-
-# Simulate user interactions and update algorithm
-for round in range(1, total_rounds + 1):
-    # Simulate user characteristics
-    user_characteristics = np.random.choice(['female_over_25', 'male_over_25', 'under_25'])
-    click_probabilities = preferences[user_characteristics]
-
-    # Select article using UCB algorithm
-    selected_article = ucb_algorithm.select_article(round)
-
-    # Calculate optimal reward for this round based on user's characteristics
-    optimal_reward = max(click_probabilities)
-
-    # Simulate user click based on selected article's click probability
-    click_probability = click_probabilities[selected_article]
-    if np.random.rand() < click_probability:
-        reward = 1
-    else:
-        reward = 0
-
-    # Update algorithm with the observed reward
-    ucb_algorithm.update(selected_article, reward)
-
-    # Calculate regret
-    chosen_reward = ucb_algorithm.sum_rewards[selected_article] / ucb_algorithm.num_selections[selected_article] \
-        if ucb_algorithm.num_selections[selected_article] > 0 else 0
-    regret = optimal_reward - chosen_reward
-
-    # Update cumulative regret and cumulative reward
-    cumulative_regret.append(cumulative_regret[-1] + regret if round > 1 else regret)
-    cumulative_reward.append(ucb_algorithm.total_reward)
-
-# Evaluate algorithm's performance
-total_reward = ucb_algorithm.total_reward
-print(f"Cumulative total reward: {total_reward}")
-
-# Plot cumulative regret and cumulative reward along with the linear function f(x) = x
-plt.plot(range(1, total_rounds + 1), cumulative_regret, label='Cumulative Regret')
-plt.plot(range(1, total_rounds + 1), cumulative_reward, label='Cumulative Reward')
-plt.plot(range(1, total_rounds + 1), range(1, total_rounds + 1), label='f(x) = x', linestyle='--')
-plt.xlabel('Rounds')
-plt.ylabel('Value')
-plt.title('Cumulative Regret and Cumulative Reward over Rounds')
-plt.grid()
+plt.xlabel('Time Step')
+plt.ylabel('Cumulative Value')
+plt.title('UCB1 Algorithm Performance')
 plt.legend()
+plt.grid(True)
 plt.show()
