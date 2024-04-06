@@ -1,103 +1,136 @@
-import random
-import numpy as nm
-import time
-
-class User:
-    def __init__(self, gender, age):
-        self.gender = gender
-        self.age = age
-
-#method to generate users.
-#There are 4 types of users here:
-#Male, above 25.
-#Male, under 25.
-#Female, above 25.
-#Female, under 25.
-#They all have 1/4 chance to appear (Could be done in a better way.)
-
-def generate_users(num_users):
-    users = []
-    genders = ['female', 'male']  # Only female and male genders are considered
-    num_above_25 = num_users // 2  # Number of users with age above 25
-    num_below_25 = num_users - num_above_25  # Number of users with age below 25
-
-    above_25_users = []
-    below_25_users = []
-
-    for _ in range(num_above_25):
-        gender = random.choice(genders)
-        age = random.randint(26, 70)  # Ages above 25
-        user = User(gender, age)
-        above_25_users.append(user)
-
-    for _ in range(num_below_25):
-        gender = random.choice(genders)
-        age = random.randint(12, 25)  # Ages below or equal to 25
-        user = User(gender, age)
-        below_25_users.append(user)
-
-    users.extend(above_25_users)
-    users.extend(below_25_users)
-
-    #return users, above_25_users, below_25_users
-    return users
+import numpy as np
+import matplotlib.pyplot as plt
 
 
-if __name__ == "__main__":
-    num_users = 10000  # Change this to the desired number of users
-    
-    T = 1000
-    #We have K = 5 arms.
-    
-    rewards_of_arm_i = {} #key is the arm
-    
-    rewards_dic = {}
-    
-    for i in range(100):
-        # Generate a random number between 0 and 1
-        random_number = random.random()
+class UCBAlgorithm:
+    """
+    This class implements the UCB algorithm, which is a popular strategy for
+    balancing exploration and exploitation in multi-armed bandit problems.
+    The algorithm maintains estimates of the expected rewards for each arm
+    and uses these estimates to select the arm with the highest Upper Confidence
+    Bound (UCB) value at each round.
 
-        # Determine the value based on the random number
-        if random_number < 0.5:
-            value = 0
-        else:
-            value = 1
-            
-        rewards_dic[i] = value
+    Parameters:
+    - num_articles (int): The number of arms (articles) in the multi-armed bandit.
+
+    Methods:
+    - get_ucb(article_index, total_rounds):
+        Computes the Upper Confidence Bound (UCB) value for a given arm at
+        the current round based on its historical rewards and exploration bonus.
+        Parameters:
+        * article_index (int): The index of the arm for which to compute the UCB value.
+        * total_rounds (int): The total number of rounds completed so far.
+        Returns:
+        * ucb_value (float): The UCB value for the specified arm.
+
+    - select_article(total_rounds):
+        Selects the arm with the highest Upper Confidence Bound (UCB) value
+        at the current round.
+        Parameters:
+        * total_rounds (int): The total number of rounds completed so far.
+        Returns:
+        * selected_article (int): The index of the arm selected for this round.
+
+    - update(article_index, reward):
+        Updates the historical records of rewards for the selected arm based on
+        the observed reward in the current round.
+        Parameters:
+        * article_index (int): The index of the arm selected for this round.
+        * reward (int): The reward obtained by selecting the specified arm.
+    """
+    def __init__(self, num_articles):
+        self.num_articles = num_articles
+        self.num_selections = np.zeros(num_articles)
+        self.sum_rewards = np.zeros(num_articles)
+        self.total_reward = 0
         
-    #let's calculate the mean.
+    def get_ucb(self, article_index, total_rounds):
+        #For couple first rounds of the experiment we except 
+        #the ucb of each untouched arm-article to be infinity (According to mean estimate formula)
+        if self.num_selections[article_index] == 0:
+            return float('inf')  # Select unselected articles first
+        
+        #Applying the mean estimate formula here.
+        avg_reward = self.sum_rewards[article_index] / self.num_selections[article_index]
+        exploration_bonus = np.sqrt(2 * np.log(total_rounds) / self.num_selections[article_index])
+        return avg_reward + exploration_bonus
     
-    #Get the denominator.
-    times_arm_i_was_selected = 0
+    def select_article(self, total_rounds):
+        #When choosing an article we want to select the one
+        #that has the greatest ucb value.
+        ucb_values = [self.get_ucb(i, total_rounds) for i in range(self.num_articles)]
+        return np.argmax(ucb_values)
     
+    def update(self, article_index, reward):
+        #Here we update the ucb for a given article.
+        self.num_selections[article_index] += 1
+        self.sum_rewards[article_index] += reward
+        self.total_reward += reward
+
+
+
+# Define user-news preferences
+preferences = {
+    'female_over_25': [0.8, 0.6, 0.5, 0.4, 0.2],
+    'male_over_25': [0.2, 0.4, 0.5, 0.6, 0.8],
+    'under_25': [0.2, 0.5, 0.8, 0.4, 0.2]
+}
+
+# Define optimal rewards for each article based on the highest click probability
+optimal_rewards = [max(preferences[key]) for key in preferences]
+
+# Define number of articles and total rounds
+num_articles = 5
+total_rounds = 100000
+
+# Initialize UCB algorithm
+ucb_algorithm = UCBAlgorithm(num_articles)
+
+# Track cumulative regret
+cumulative_regret = []
+
+# Simulate user interactions and update algorithm
+for round in range(1, total_rounds + 1):
+    # Simulate user characteristics
+    user_characteristics = np.random.choice(['female_over_25', 'male_over_25', 'under_25'])
     
+    click_probabilities = preferences[user_characteristics]
     
-    for index, value in rewards_dic.items():
-        if(value==1):
-            times_arm_i_was_selected+=1
-            
-    nominator = times_arm_i_was_selected
+    # Select article using UCB algorithm
+    selected_article = ucb_algorithm.select_article(round)
     
-    mean_estimate_m = nominator-5/times_arm_i_was_selected
-    mean_estimate_N = times_arm_i_was_selected
-    print(mean_estimate_m)
-    #print(rewards_dic)
-    #print(f"This arm was selected {times_arm_i_was_selected} times.")
+    # Calculate optimal reward for this round based on user's characteristics
+    optimal_reward = max(click_probabilities)
     
-    upper_confidence_bound = mean_estimate_m + nm.sqrt((2*nm.log(T))/mean_estimate_N)
+    # Simulate user click based on selected article's click probability
+    click_probability = click_probabilities[selected_article]
+    if np.random.rand() < click_probability:
+        reward = 1
+    else:
+        reward = 0
     
+    # Update algorithm with the observed reward
+    ucb_algorithm.update(selected_article, reward)
     
-    print(upper_confidence_bound)
+    # Calculate regret
+    chosen_reward = ucb_algorithm.sum_rewards[selected_article] / ucb_algorithm.num_selections[selected_article] \
+                    if ucb_algorithm.num_selections[selected_article] > 0 else 0
+    regret = optimal_reward - chosen_reward
     
-    ucb_list = [28.94, 15.72, 83.05, 44.19, 7.63, 90.12, 55.38, 36.87, 71.56, 9.82]
-    
-    print(f"Current UCB list: {ucb_list}")
-    
-    best_arm = ucb_list[0]
-    
-    for i in ucb_list:
-        if i>best_arm:
-            best_arm=i
-    
-    print(best_arm)
-    
+    # Update cumulative regret
+    if round == 1:
+        cumulative_regret.append(regret)
+    else:
+        cumulative_regret.append(cumulative_regret[-1] + regret)
+
+# Evaluate algorithm's performance
+total_reward = ucb_algorithm.total_reward
+print(f"Total reward: {total_reward}")
+
+# Plot cumulative regret
+plt.plot(range(1, total_rounds + 1), cumulative_regret, label='Cumulative Regret')
+plt.xlabel('Round')
+plt.ylabel('Regret')
+plt.title('Cumulative Regret over Rounds')
+plt.legend()
+plt.show()
