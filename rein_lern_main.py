@@ -1,3 +1,4 @@
+#Teacher's implementation of Explore and Exploit algorithm.
 # import modules 
 import numpy as np 
 import matplotlib.pyplot as plt 
