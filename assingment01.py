@@ -1,7 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-
 class UCBAlgorithm:
     """
     This class implements the UCB algorithm.
@@ -42,37 +41,30 @@ class UCBAlgorithm:
         self.num_selections = np.zeros(num_articles)
         self.sum_rewards = np.zeros(num_articles)
         self.total_reward = 0
-        
+        self.cumulative_reward = []
+
     def get_ucb(self, article_index, total_rounds):
-        #For couple first rounds of the experiment we except 
-        #the ucb of each untouched arm-article to be infinity (According to mean estimate formula)
         if self.num_selections[article_index] == 0:
             return float('inf')  # Select unselected articles first
-        
-        #Applying the mean estimate formula here.
         avg_reward = self.sum_rewards[article_index] / self.num_selections[article_index]
         exploration_bonus = np.sqrt(2 * np.log(total_rounds) / self.num_selections[article_index])
         return avg_reward + exploration_bonus
-    
+
     def select_article(self, total_rounds):
-        #When choosing an article we want to select the one
-        #that has the greatest ucb value.
         ucb_values = [self.get_ucb(i, total_rounds) for i in range(self.num_articles)]
         return np.argmax(ucb_values)
-    
+
     def update(self, article_index, reward):
-        #Here we update the ucb for a given article.
         self.num_selections[article_index] += 1
         self.sum_rewards[article_index] += reward
         self.total_reward += reward
+        self.cumulative_reward.append(self.total_reward)
 
-
-
-# Define user-news preferences
+# Defining user-news preferences
 preferences = {
     'female_over_25': [0.8, 0.6, 0.5, 0.4, 0.2],
     'male_over_25': [0.2, 0.4, 0.5, 0.6, 0.8],
-    'under_25': [0.2, 0.5, 0.8, 0.4, 0.2]
+    'under_25': [0.2, 0.4, 0.8, 0.6, 0.5]
 }
 
 # Define optimal rewards for each article based on the highest click probability
@@ -80,56 +72,57 @@ optimal_rewards = [max(preferences[key]) for key in preferences]
 
 # Define number of articles and total rounds
 num_articles = 5
-total_rounds = 100000
+total_rounds = 1000
 
 # Initialize UCB algorithm
 ucb_algorithm = UCBAlgorithm(num_articles)
 
-# Track cumulative regret
+# Track cumulative regret and cumulative reward
 cumulative_regret = []
+cumulative_reward = []
 
 # Simulate user interactions and update algorithm
 for round in range(1, total_rounds + 1):
     # Simulate user characteristics
     user_characteristics = np.random.choice(['female_over_25', 'male_over_25', 'under_25'])
-    
     click_probabilities = preferences[user_characteristics]
-    
+
     # Select article using UCB algorithm
     selected_article = ucb_algorithm.select_article(round)
-    
+
     # Calculate optimal reward for this round based on user's characteristics
     optimal_reward = max(click_probabilities)
-    
+
     # Simulate user click based on selected article's click probability
     click_probability = click_probabilities[selected_article]
     if np.random.rand() < click_probability:
         reward = 1
     else:
         reward = 0
-    
+
     # Update algorithm with the observed reward
     ucb_algorithm.update(selected_article, reward)
-    
+
     # Calculate regret
     chosen_reward = ucb_algorithm.sum_rewards[selected_article] / ucb_algorithm.num_selections[selected_article] \
-                    if ucb_algorithm.num_selections[selected_article] > 0 else 0
+        if ucb_algorithm.num_selections[selected_article] > 0 else 0
     regret = optimal_reward - chosen_reward
-    
-    # Update cumulative regret
-    if round == 1:
-        cumulative_regret.append(regret)
-    else:
-        cumulative_regret.append(cumulative_regret[-1] + regret)
+
+    # Update cumulative regret and cumulative reward
+    cumulative_regret.append(cumulative_regret[-1] + regret if round > 1 else regret)
+    cumulative_reward.append(ucb_algorithm.total_reward)
 
 # Evaluate algorithm's performance
 total_reward = ucb_algorithm.total_reward
-print(f"Total reward: {total_reward}")
+print(f"Cumulative total reward: {total_reward}")
 
-# Plot cumulative regret
+# Plot cumulative regret and cumulative reward along with the linear function f(x) = x
 plt.plot(range(1, total_rounds + 1), cumulative_regret, label='Cumulative Regret')
-plt.xlabel('Round')
-plt.ylabel('Regret')
-plt.title('Cumulative Regret over Rounds')
+plt.plot(range(1, total_rounds + 1), cumulative_reward, label='Cumulative Reward')
+plt.plot(range(1, total_rounds + 1), range(1, total_rounds + 1), label='f(x) = x', linestyle='--')
+plt.xlabel('Rounds')
+plt.ylabel('Value')
+plt.title('Cumulative Regret and Cumulative Reward over Rounds')
+plt.grid()
 plt.legend()
 plt.show()
