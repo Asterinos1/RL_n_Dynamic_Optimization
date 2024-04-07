@@ -20,7 +20,7 @@ class UCB1():
     def select_arm(self):
         n_arms = len(self.counts)
         
-        #Prioritize arms that haven't been played at all.
+        
         for arm in range(n_arms):
             if self.counts[arm] == 0:
                 return arm
@@ -28,7 +28,7 @@ class UCB1():
         ucb_values = [0.0 for _ in range(n_arms)]
         total_counts = sum(self.counts)
         
-        #Applying ucb formula here, calculating each arm's UCB
+        #Applying ucb formula here
         for arm in range(n_arms):
             bonus = math.sqrt((2 * math.log(total_counts)) / float(self.counts[arm]))
             ucb_values[arm] = self.values[arm] + bonus
@@ -56,9 +56,8 @@ class BernoulliArm():
         else:
             return 1.0
 
-# Define parameters
-num_sims = 1   # How many times to run the simulatiom
-horizon = 600  # Defining the horizon
+# Define parameters   
+horizon = 10000  # Defining the horizon.
 
 # Define arms with their corresponding click probabilities
 arms = [BernoulliArm(0.8), BernoulliArm(0.6), BernoulliArm(0.5), BernoulliArm(0.4), BernoulliArm(0.2)]
@@ -67,55 +66,55 @@ arms = [BernoulliArm(0.8), BernoulliArm(0.6), BernoulliArm(0.5), BernoulliArm(0.
 ucb = UCB1([], [])
 
 # Function to simulate the algorithm
-def test_algorithm(algo, arms, num_sims, horizon):
-    chosen_arms = [0 for _ in range(num_sims * horizon)]
-    rewards = [0.0 for _ in range(num_sims * horizon)]
-    cumulative_rewards = [0.0 for _ in range(num_sims * horizon)]
-    cumulative_regret = [0.0 for _ in range(num_sims * horizon)]
-    sim_nums = [0 for _ in range(num_sims * horizon)]
-    times = [0 for _ in range(num_sims * horizon)]
+def test_algorithm(algo, arms, horizon):
+    chosen_arms = [0 for _ in range( horizon)]
+    rewards = [0.0 for _ in range(horizon)]
+    cumulative_rewards = [0.0 for _ in range(horizon)]
+    cumulative_regret = [0.0 for _ in range( horizon)]
+    times = [0 for _ in range(horizon)]
     
-    for sim in range(num_sims):
-        algo.initialize(len(arms))
-        for t in range(horizon):
-            index = sim * horizon + t
-            sim_nums[index] = sim
-            times[index] = t + 1
+    
+    algo.initialize(len(arms))
+    for t in range(horizon):
+        index = horizon + t
+        times[index] = t + 1
             
             # Select arm using UCB1 algorithm
-            chosen_arm = algo.select_arm()
-            chosen_arms[index] = chosen_arm
+        chosen_arm = algo.select_arm()
+        chosen_arms[index] = chosen_arm
             
             # Draw reward from selected arm
-            reward = arms[chosen_arm].draw()
-            rewards[index] = reward
+        reward = arms[chosen_arm].draw()
+        rewards[index] = reward
             
-            if t == 0:
-                cumulative_rewards[index] = reward
-            else:
-                cumulative_rewards[index] = cumulative_rewards[index - 1] + reward
+        if t == 0:
+            cumulative_rewards[index] = reward
+        else:
+            cumulative_rewards[index] = cumulative_rewards[index - 1] + reward
             
-            # Calculate regret
-            optimal_reward = max(arm.p for arm in arms)
-            cumulative_regret[index] = (t + 1) * optimal_reward - cumulative_rewards[index]
+        # Calculate regret
+        optimal_reward = max(arm.p for arm in arms)
+        cumulative_regret[index] = (t + 1) * optimal_reward - cumulative_rewards[index]
             
-            # Update algorithm with chosen arm and reward
-            algo.update(chosen_arm, reward)
-    
-    return sim_nums, times, chosen_arms, rewards, cumulative_rewards, cumulative_regret
+        # Update algorithm with chosen arm and reward
+        algo.update(chosen_arm, reward) 
+
+
+    return times, chosen_arms, rewards, cumulative_rewards, cumulative_regret
 
 # Simulate the algorithm
-sim_nums, times, chosen_arms, rewards, cumulative_rewards, cumulative_regret = test_algorithm(ucb, arms, num_sims, horizon)
+times, chosen_arms, rewards, cumulative_rewards, cumulative_regret = test_algorithm(ucb, arms, horizon)
 
 # Plot results
 plt.figure(figsize=(10, 6))
 
 # Plot cumulative regret and reward
-plt.plot(range(num_sims * horizon), cumulative_regret, label='Cumulative Regret', color='red')
-plt.plot(range(num_sims * horizon), cumulative_rewards, label='Cumulative Reward', color='blue')
+plt.plot(range( horizon), cumulative_regret, label='Cumulative Regret', color='red')
+plt.plot(range( horizon), cumulative_rewards, label='Cumulative Reward', color='blue')
 
-# Plot linear function f(x)=x to compare with previous results
-plt.plot(range(num_sims * horizon), [t + 1 for t in range(num_sims * horizon)], linestyle='--', label='f(x) = x', color='green')
+# Plot linear function f(x)=x
+plt.plot(range(horizon), [t + 1 for t in range(* horizon)], linestyle='--', label='f(x) = x', color='green')
+
 plt.xlabel('Time Step')
 plt.ylabel('Cumulative Value')
 plt.title('UCB1 Algorithm Performance')
