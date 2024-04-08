@@ -112,4 +112,17 @@ def test_algorithm(algo, arms, num_sims, horizon):
     
     return [sim_nums, times, chosen_arms, rewards, cumulative_rewards]
 
-Based on the sample python code for UCB algorithm create a python code to solve the problem.
+Based on the sample python code for UCB algorithm create a python code to solve the problem and produce plots that show the sublinear regret of your algorithm.
+
+
+
+This Python code implements the click-through rate problem using UCB algorithm in Python and has only a single user-type with his click probabilities.
+Update the code with the following:
+it turns out that different types of users might prefer different articles! 
+Let p1, p2, p3, p4 ,p5  denote the click probabilities for articles, 1,2,3,4,5, respectively. 
+The taste differences are captured as follows:
+female over 25: p1 = 0.8, p2 = 0.6, p3 = 0.5 , p4 = 0.4 , p5 = 0.2 
+male over 25:  p1 = 0.2, p2 = 0.4, p3 = 0.5 , p4 = 0.6 , p5 = 0.8
+male or female under 25:   p1 = 0.2, p2 = 0.4, p3 = 0.8 , p4 = 0.6 , p5 = 0.5
+The code needs to adapt for each type of user.
+
