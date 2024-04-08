@@ -8,46 +8,75 @@ import matplotlib.pyplot as plt
 # https://kfoofw.github.io/bandit-theory-ucb-analysis/
 
 # UCB1 algorithm class
-# 
+# We keep track for the stats of each user type separately
+# female over 25 -> female
+# male over 25 -> male
+# male/female under 25 -> kid
 class UCB1():
-    def __init__(self, counts, values):
-        self.counts = counts # Count represent counts of pulls for each arm
-        self.values = values # Value represent average reward for specific arm
+    def __init__(self, counts_female, values_female, counts_male, values_male, counts_kid, values_kid):
+        self.counts_female = counts_female
+        self.values_female = values_female
+        self.counts_male = counts_male
+        self.values_male = values_male
+        self.counts_kid = counts_kid
+        self.values_kid = values_kid
     
     def initialize(self, n_arms):
-        self.counts = [0 for _ in range(n_arms)]
-        self.values = [0.0 for _ in range(n_arms)]
+        self.counts_female = [0 for _ in range(n_arms)]
+        self.values_female = [0.0 for _ in range(n_arms)]
+        self.counts_male = [0 for _ in range(n_arms)]
+        self.values_male = [0.0 for _ in range(n_arms)]
+        self.counts_kid = [0 for _ in range(n_arms)]
+        self.values_kid = [0.0 for _ in range(n_arms)]
     
-    # UCB arm selection based on max of UCB reward of each arm
-    def select_arm(self):
-        n_arms = len(self.counts)
-        
-        #Prioritize arms that haven't been played at all.
+    def select_arm(self, user_type):
+        if user_type == 'female':
+            counts = self.counts_female
+            values = self.values_female
+        elif user_type == 'male':
+            counts = self.counts_male
+            values = self.values_male
+        elif user_type == 'kid':
+            counts = self.counts_kid
+            values = self.values_kid
+        else:
+            raise ValueError("Invalid user type")
+
+        n_arms = len(counts)
         for arm in range(n_arms):
-            if self.counts[arm] == 0:
+            if counts[arm] == 0:
                 return arm
-        
+
         ucb_values = [0.0 for _ in range(n_arms)]
-        total_counts = sum(self.counts)
-        
-        #Applying ucb formula here, calculating each arm's UCB
+        total_counts = sum(counts)
+
         for arm in range(n_arms):
-            bonus = math.sqrt((2 * math.log(total_counts)) / float(self.counts[arm]))
-            ucb_values[arm] = self.values[arm] + bonus
-        
+            bonus = math.sqrt((2 * math.log(total_counts)) / float(counts[arm]))
+            ucb_values[arm] = values[arm] + bonus
+
         return ucb_values.index(max(ucb_values))
     
-    # Choose to update chosen arm and reward
-    def update(self, chosen_arm, reward):
-        self.counts[chosen_arm] += 1
-        n = self.counts[chosen_arm]
+    def update(self, chosen_arm, reward, user_type):
+        if user_type == 'female':
+            counts = self.counts_female
+            values = self.values_female
+        elif user_type == 'male':
+            counts = self.counts_male
+            values = self.values_male
+        elif user_type == 'kid':
+            counts = self.counts_kid
+            values = self.values_kid
+        else:
+            raise ValueError("Invalid user type")
         
-        # Update average/mean value/reward for chosen arm
-        value = self.values[chosen_arm]
+        counts[chosen_arm] += 1
+        n = counts[chosen_arm]
+        value = values[chosen_arm]
         new_value = ((n - 1) / float(n)) * value + (1 / float(n)) * reward
-        self.values[chosen_arm] = new_value
+        values[chosen_arm] = new_value
 
 # Bernoulli arm class
+# The reward for success returns 1 else 0
 class BernoulliArm():
     def __init__(self, p):
         self.p = p
@@ -59,17 +88,19 @@ class BernoulliArm():
             return 1.0
 
 # Define parameters
-num_sims = 1   # How many times to run the simulatiom
-horizon = 1000  # Defining the horizon
+num_sims = 1   # How many times to run the simulation
+horizon = 10000  # Defining the horizon
 
-# Define arms with their corresponding click probabilities
-arms = [BernoulliArm(0.8), BernoulliArm(0.6), BernoulliArm(0.5), BernoulliArm(0.4), BernoulliArm(0.2)]
+# Define arms for female over 25, male over 25, and kids
+arms_female = [BernoulliArm(0.8), BernoulliArm(0.6), BernoulliArm(0.5), BernoulliArm(0.4), BernoulliArm(0.2)]
+arms_male = list(reversed(arms_female))
+arms_kid = [BernoulliArm(0.2), BernoulliArm(0.4), BernoulliArm(0.8), BernoulliArm(0.6), BernoulliArm(0.5)]
 
 # Initialize UCB1 algorithm
-ucb = UCB1([], [])
+ucb = UCB1([], [], [], [], [], [])
 
 # Function to simulate the algorithm
-def test_algorithm(algo, arms, num_sims, horizon):
+def test_algorithm(algo, arms_female, arms_male, arms_kid, num_sims, horizon):
     chosen_arms = [0 for _ in range(num_sims * horizon)]
     rewards = [0.0 for _ in range(num_sims * horizon)]
     cumulative_rewards = [0.0 for _ in range(num_sims * horizon)]
@@ -77,21 +108,32 @@ def test_algorithm(algo, arms, num_sims, horizon):
     sim_nums = [0 for _ in range(num_sims * horizon)]
     times = [0 for _ in range(num_sims * horizon)]
     
+    #Ignore this
     for sim in range(num_sims):
-        algo.initialize(len(arms))
+        algo.initialize(len(arms_female))  # Initialize for female arms
+        
         for t in range(horizon):
+            
             index = sim * horizon + t
             sim_nums[index] = sim
             times[index] = t + 1
             
-            # Select arm using UCB algorithm
-            chosen_arm = algo.select_arm()
-            chosen_arms[index] = chosen_arm
+            # Randomly choose user type for this round
+            user_type = random.choice(['female', 'male', 'kid'])
+            print(f"Current user is a {user_type}")
             
-            # Draw reward from selected arm using Bernoulli.
-            # Success -> reward = 1
-            # Fail -> reward = 0
-            reward = arms[chosen_arm].draw()
+            # Select arm using UCB algorithm based on user type
+            if user_type == 'female':
+                chosen_arm = algo.select_arm('female')
+                reward = arms_female[chosen_arm].draw()
+            elif user_type == 'male':
+                chosen_arm = algo.select_arm('male')
+                reward = arms_male[chosen_arm].draw()
+            else:
+                chosen_arm = algo.select_arm('kid')
+                reward = arms_kid[chosen_arm].draw()
+            
+            chosen_arms[index] = chosen_arm
             rewards[index] = reward
             
             if t == 0:
@@ -100,16 +142,27 @@ def test_algorithm(algo, arms, num_sims, horizon):
                 cumulative_rewards[index] = cumulative_rewards[index - 1] + reward
             
             # Calculate regret
-            optimal_reward = max(arm.p for arm in arms)
+            if user_type == 'female':
+                optimal_reward = max(arm.p for arm in arms_female)
+            elif user_type == 'male':
+                optimal_reward = max(arm.p for arm in arms_male)
+            else:
+                optimal_reward = max(arm.p for arm in arms_kid)
+                
             cumulative_regret[index] = (t + 1) * optimal_reward - cumulative_rewards[index]
             
             # Update algorithm with chosen arm and reward
-            algo.update(chosen_arm, reward)
+            if user_type == 'female':
+                algo.update(chosen_arm, reward, 'female')
+            elif user_type == 'male':
+                algo.update(chosen_arm, reward, 'male')
+            else:
+                algo.update(chosen_arm, reward, 'kid')
     
     return sim_nums, times, chosen_arms, rewards, cumulative_rewards, cumulative_regret
 
 # Simulate the algorithm
-sim_nums, times, chosen_arms, rewards, cumulative_rewards, cumulative_regret = test_algorithm(ucb, arms, num_sims, horizon)
+sim_nums, times, chosen_arms, rewards, cumulative_rewards, cumulative_regret = test_algorithm(ucb, arms_female, arms_male, arms_kid, num_sims, horizon)
 
 # Plot results
 plt.figure(figsize=(10, 6))
