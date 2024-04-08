@@ -4,9 +4,11 @@ import matplotlib.pyplot as plt
 
 # This code is a modification of Kenneth Foo Fangwei's code,
 # adjusted to the exercise's characteristics
+# As of now it works for a single user type
 # https://kfoofw.github.io/bandit-theory-ucb-analysis/
 
 # UCB1 algorithm class
+# 
 class UCB1():
     def __init__(self, counts, values):
         self.counts = counts # Count represent counts of pulls for each arm
@@ -58,7 +60,7 @@ class BernoulliArm():
 
 # Define parameters
 num_sims = 1   # How many times to run the simulatiom
-horizon = 600  # Defining the horizon
+horizon = 1000  # Defining the horizon
 
 # Define arms with their corresponding click probabilities
 arms = [BernoulliArm(0.8), BernoulliArm(0.6), BernoulliArm(0.5), BernoulliArm(0.4), BernoulliArm(0.2)]
@@ -82,11 +84,13 @@ def test_algorithm(algo, arms, num_sims, horizon):
             sim_nums[index] = sim
             times[index] = t + 1
             
-            # Select arm using UCB1 algorithm
+            # Select arm using UCB algorithm
             chosen_arm = algo.select_arm()
             chosen_arms[index] = chosen_arm
             
-            # Draw reward from selected arm
+            # Draw reward from selected arm using Bernoulli.
+            # Success -> reward = 1
+            # Fail -> reward = 0
             reward = arms[chosen_arm].draw()
             rewards[index] = reward
             
@@ -118,7 +122,7 @@ plt.plot(range(num_sims * horizon), cumulative_rewards, label='Cumulative Reward
 plt.plot(range(num_sims * horizon), [t + 1 for t in range(num_sims * horizon)], linestyle='--', label='f(x) = x', color='green')
 plt.xlabel('Time Step')
 plt.ylabel('Cumulative Value')
-plt.title('UCB1 Algorithm Performance')
+plt.title('UCB Algorithm Performance')
 plt.legend()
 plt.grid(True)
 plt.show()
