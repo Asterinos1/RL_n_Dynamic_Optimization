@@ -198,6 +198,8 @@ sim_nums, times, chosen_arms, rewards, cumulative_rewards, cumulative_regret = t
 # Plot results
 plt.figure(figsize=(10, 6))
 
+
+
 # Plot cumulative regret and reward
 plt.plot(range(num_sims * horizon), cumulative_regret, label='Cumulative Regret', color='red')
 #plt.plot(range(num_sims * horizon), cumulative_rewards, label='Cumulative Reward', color='blue')
