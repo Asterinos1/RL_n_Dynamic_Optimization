@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 
 # This code is a modification of Kenneth Foo Fangwei's code,
 # adjusted to the exercise's characteristics
-# As of now it works for a single user type
 # https://kfoofw.github.io/bandit-theory-ucb-analysis/
 
 # UCB1 algorithm class
