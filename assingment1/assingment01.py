@@ -8,9 +8,9 @@ import matplotlib.pyplot as plt
 
 # UCB1 algorithm class
 # We keep track for the stats of each user type separately
-# female over 25 -> female
-# male over 25 -> male
-# male/female under 25 -> kid
+# female over 25 
+# male over 25 
+# male/female under 25
 class UCB1():
     def __init__(self, counts_female, values_female, counts_male, 
                 values_male, counts_kid, values_kid,counts_kid2, values_kids2 ):
@@ -58,7 +58,7 @@ class UCB1():
 
         n_arms = len(counts)
         for arm in range(n_arms):
-            if counts[arm] == 0:
+             if counts[arm] == 0:
                 return arm
 
         ucb_values = [0.0 for _ in range(n_arms)]
@@ -106,7 +106,7 @@ class BernoulliArm():
 
 # Define parameters
 num_sims = 1   # How many times to run the simulation
-horizon = 10000  # Defining the horizon
+horizon = 1000  # Defining the horizon
 
 # Define arms for female over 25, male over 25, and kids (under 25)
 arms_female_over_25 = [BernoulliArm(0.8), BernoulliArm(0.6), BernoulliArm(0.5), BernoulliArm(0.4), BernoulliArm(0.2)]
@@ -191,23 +191,47 @@ def test_algorithm(algo, arms_female_over_25, arms_male_over_25, arms_female_und
     
     return sim_nums, times, chosen_arms, rewards, cumulative_rewards, cumulative_regret
 
+# Define the logarithmic function
+# This function is used to generate the theoretical upper bound 
+# of the cumulative regret.
+def logarithmic_function(x):
+    return (math.sqrt(20*x*math.log(x))) if x > 0 else 0  # Avoid log(0)
+
 # Simulate the algorithm
 sim_nums, times, chosen_arms, rewards, cumulative_rewards, cumulative_regret = test_algorithm(ucb, arms_female_over_25, arms_male_over_25, arms_female_under_25, arms_male_under_25, num_sims, horizon)
+
+# New horizon
+new_horizon = 10000
+
+# Simulate the algorithm with the new horizon
+new_sim_nums, new_times, new_chosen_arms, new_rewards, new_cumulative_rewards, new_cumulative_regret = test_algorithm(ucb, arms_female_over_25, arms_male_over_25, arms_female_under_25, arms_male_under_25, num_sims, new_horizon)
 
 # Plot results
 plt.figure(figsize=(10, 6))
 
-
-
-# Plot cumulative regret and reward
+# Plot for the first horizon
+plt.subplot(2, 1, 1)
+plt.plot(range(1, num_sims * horizon + 1), [logarithmic_function(t + 1) for t in range(num_sims * horizon)], 
+        linestyle='--', label='f(x) = sqrt(x*log(x))', color='blue')
 plt.plot(range(num_sims * horizon), cumulative_regret, label='Cumulative Regret', color='red')
-#plt.plot(range(num_sims * horizon), cumulative_rewards, label='Cumulative Reward', color='blue')
-
-# Plot linear function f(x)=x to compare with previous results
 plt.plot(range(num_sims * horizon), [t + 1 for t in range(num_sims * horizon)], linestyle='--', label='f(x) = x', color='green')
-
 plt.xlabel('Time Step')
 plt.ylabel('Cumulative Value')
-plt.title('UCB Algorithm Performance')
+plt.title('UCB Algorithm Performance (T = 1000)')
 plt.legend()
 plt.grid(True)
+
+# Plot for the second horizon
+plt.subplot(2, 1, 2)
+plt.plot(range(1, num_sims * new_horizon + 1), [logarithmic_function(t + 1) for t in range(num_sims * new_horizon)], 
+        linestyle='--', label='f(x) = sqrt(x*log(x))', color='blue')
+plt.plot(range(num_sims * new_horizon), new_cumulative_regret, label='Cumulative Regret (New Horizon)', color='red')
+plt.plot(range(num_sims * new_horizon), [t + 1 for t in range(num_sims * new_horizon)], linestyle='--', label='f(x) = x', color='green')
+plt.xlabel('Time Step')
+plt.ylabel('Cumulative Value')
+plt.title('UCB Algorithm Performance (T = 10000)')
+plt.legend()
+plt.grid(True)
+
+plt.tight_layout()
+plt.show()
