@@ -8,39 +8,39 @@ import matplotlib.pyplot as plt
 
 # UCB algorithm class
 # We keep track for the stats of each user type separately
-# female over 25 
-# male over 25 
+# female over 25
+# male over 25
 # male/female under 25
 class UCB():
-    
-    def __init__(self, counts_female, values_female, counts_male, 
+
+    def __init__(self, counts_female, values_female, counts_male,
                 values_male, counts_kid, values_kid,counts_kid2, values_kids2 ):
         self.counts_female = counts_female
         self.values_female = values_female
-        
+
         self.counts_male = counts_male      # Counts: Represent recorded times when arm was pulled
         self.values_male = values_male      # Values: Represent the known mean reward
-        
+
         self.counts_kid = counts_kid
         self.values_kid = values_kid
-    
+
         self.counts_kid2 = counts_kid2
         self.values_kids2 = values_kids2
-        
-        
+
+
     def initialize(self, n_arms):
         self.counts_female = [0 for _ in range(n_arms)]
         self.values_female = [0.0 for _ in range(n_arms)]
-        
+
         self.counts_male = [0 for _ in range(n_arms)]
         self.values_male = [0.0 for _ in range(n_arms)]
-        
+
         self.counts_kid = [0 for _ in range(n_arms)]
         self.values_kid = [0.0 for _ in range(n_arms)]
-        
+
         self.counts_kid2 = [0 for _ in range(n_arms)]
         self.values_kid2 = [0.0 for _ in range(n_arms)]
-        
+
     # UCB arm selection based on max of UCB reward of each arm
     def select_arm(self, user_type):
         if user_type == 'female_over_25':
@@ -71,7 +71,7 @@ class UCB():
             ucb_values[arm] = values[arm] + bonus
 
         return ucb_values.index(max(ucb_values))
-    
+
     # Choose to update chosen arm and reward
     def update(self, chosen_arm, reward, user_type):
         if user_type == 'female_over_25':
@@ -88,7 +88,7 @@ class UCB():
             values = self.values_kid
         else:
             raise ValueError("Invalid user type")
-        
+
         counts[chosen_arm] += 1
         n = counts[chosen_arm]
         value = values[chosen_arm]
@@ -108,7 +108,7 @@ class BernoulliArm():
             return 1.0
 
 # Defining parameters
-num_sims = 1   # How many times to run the simulation 
+num_sims = 1   # How many times to run the simulation
 horizon = 1000  # Defining the first horizon
 
 # Defining arms for female over 25, male over 25, and kids (female/male under 25)
@@ -122,30 +122,30 @@ ucb = UCB([], [], [], [], [], [], [], [])
 
 # Function to simulate the algorithm
 def test_algorithm(algo, arms_female_over_25, arms_male_over_25, arms_female_under_25, arms_male_under_25, num_sims, horizon):
-    
+
     chosen_arms = [0 for _ in range(num_sims * horizon)] #  keep track of which arm is chosen at each time step in each simulation.
     rewards = [0.0 for _ in range(num_sims * horizon)] # store the reward obtained from the chosen arm at each time step in each simulation.
     cumulative_rewards = [0.0 for _ in range(num_sims * horizon)] # keep track of the cumulative rewards up to each time step in each simulation.
     cumulative_regret = [0.0 for _ in range(num_sims * horizon)] # store the simulation number for each time step across all simulations.
-    sim_nums = [0 for _ in range(num_sims * horizon)] # Ignore this, it's for the simulation 
-    times = [0 for _ in range(num_sims * horizon)] # Ignore this, it's for the simulation 
-    
+    sim_nums = [0 for _ in range(num_sims * horizon)] # Ignore this, it's for the simulation
+    times = [0 for _ in range(num_sims * horizon)] # Ignore this, it's for the simulation
+
     # We run our simulation 1 time so this for is kind of irrelevant in the current implementation
     for sim in range(num_sims):
-        
-        algo.initialize(len(arms_female_over_25)) 
-        
+
+        algo.initialize(len(arms_female_over_25))
+
         #Begging simulation
         for t in range(horizon):
-            
-            # Updating some info for the simulation 
+
+            # Updating some info for the simulation
             index = sim * horizon + t
             sim_nums[index] = sim
             times[index] = t + 1
-            
+
             # Randomly choose user type for this round
             user_type = random.choice(['female_over_25', 'male_over_25', 'female_under_25', 'male_under_25'])
-            
+
             # Select arm using UCB algorithm based on user type
             if user_type == 'female_over_25':
                 # Select an arm based on the info (ucb values) we have for selected user
@@ -163,16 +163,16 @@ def test_algorithm(algo, arms_female_over_25, arms_male_over_25, arms_female_und
             else:
                 chosen_arm = algo.select_arm('male_under_25')
                 reward = arms_male_under_25[chosen_arm].draw()
-            
+
             # Save info
             chosen_arms[index] = chosen_arm
             rewards[index] = reward
-            
+
             if t == 0:
                 cumulative_rewards[index] = reward
             else:
                 cumulative_rewards[index] = cumulative_rewards[index - 1] + reward
-            
+
             # Calculate regret
             if user_type == 'female_over_25':
                 optimal_reward = max(arm.p for arm in arms_female_over_25)
@@ -182,9 +182,9 @@ def test_algorithm(algo, arms_female_over_25, arms_male_over_25, arms_female_und
                 optimal_reward = max(arm.p for arm in arms_female_under_25)
             else:
                 optimal_reward = max(arm.p for arm in arms_male_under_25)
-                
+
             cumulative_regret[index] = (t + 1) * optimal_reward - cumulative_rewards[index]
-            
+
             # Update algorithm with chosen arm and reward
             if user_type == 'female_over_25':
                 algo.update(chosen_arm, reward, 'female_over_25')
@@ -194,11 +194,11 @@ def test_algorithm(algo, arms_female_over_25, arms_male_over_25, arms_female_und
                 algo.update(chosen_arm, reward, 'female_under_25')
             else:
                 algo.update(chosen_arm, reward, 'male_under_25')
-    
+
     return sim_nums, times, chosen_arms, rewards, cumulative_rewards, cumulative_regret
 
 # Define the logarithmic function
-# This function is used to generate the theoretical upper bound 
+# This function is used to generate the theoretical upper bound
 # of the cumulative regret.
 def draw_theoretical_bound(x):
     return (4*math.sqrt(5*x*math.log(x))) if x > 0 else 0  # Avoid log(0)
@@ -218,8 +218,8 @@ plt.figure(figsize=(10, 6))
 # Plot cumulative regret or the first horizon
 # Also plot linear function and the theoretical bound for comparison
 plt.subplot(2, 1, 1)
-plt.plot(range(1, num_sims * horizon + 1), [draw_theoretical_bound(t + 1) for t in range(num_sims * horizon)], 
-        linestyle='--', label='f(x) = sqrt(x*log(x))', color='blue')
+plt.plot(range(1, num_sims * horizon + 1), [draw_theoretical_bound(t + 1) for t in range(num_sims * horizon)],
+        linestyle='--', label='R(T) = 4*sqrt(5*T*log(T))', color='blue')
 plt.plot(range(num_sims * horizon), cumulative_regret, label='Cumulative Regret', color='red')
 plt.plot(range(num_sims * horizon), [t + 1 for t in range(num_sims * horizon)], linestyle='--', label='f(x) = x', color='green')
 plt.xlabel('Time Step')
@@ -231,8 +231,8 @@ plt.grid(True)
 # Plot  cumulative regret for the second horizon
 # Also plot linear function and the theoretical bound for comparison
 plt.subplot(2, 1, 2)
-plt.plot(range(1, num_sims * new_horizon + 1), [draw_theoretical_bound(t + 1) for t in range(num_sims * new_horizon)], 
-        linestyle='--', label='f(x) = sqrt(x*log(x))', color='blue')
+plt.plot(range(1, num_sims * new_horizon + 1), [draw_theoretical_bound(t + 1) for t in range(num_sims * new_horizon)],
+        linestyle='--', label='R(T) = 4*sqrt(5*T*log(T))', color='blue')
 plt.plot(range(num_sims * new_horizon), new_cumulative_regret, label='Cumulative Regret (New Horizon)', color='red')
 plt.plot(range(num_sims * new_horizon), [t + 1 for t in range(num_sims * new_horizon)], linestyle='--', label='f(x) = x', color='green')
 plt.xlabel('Time Step')
