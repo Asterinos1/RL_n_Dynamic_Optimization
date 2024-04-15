@@ -6,12 +6,12 @@ import matplotlib.pyplot as plt
 # adjusted to the exercise's characteristics
 # https://kfoofw.github.io/bandit-theory-ucb-analysis/
 
-# UCB1 algorithm class
+# UCB algorithm class
 # We keep track for the stats of each user type separately
 # female over 25 
 # male over 25 
 # male/female under 25
-class UCB1():
+class UCB():
     def __init__(self, counts_female, values_female, counts_male, 
                 values_male, counts_kid, values_kid,counts_kid2, values_kids2 ):
         self.counts_female = counts_female
@@ -25,7 +25,8 @@ class UCB1():
     
         self.counts_kid2 = counts_kid2
         self.values_kids2 = values_kids2
-    
+        
+        
     def initialize(self, n_arms):
         self.counts_female = [0 for _ in range(n_arms)]
         self.values_female = [0.0 for _ in range(n_arms)]
@@ -58,7 +59,7 @@ class UCB1():
 
         n_arms = len(counts)
         for arm in range(n_arms):
-             if counts[arm] == 0:
+            if counts[arm] == 0:
                 return arm
 
         ucb_values = [0.0 for _ in range(n_arms)]
@@ -105,19 +106,17 @@ class BernoulliArm():
             return 1.0
 
 # Define parameters
-num_sims = 1   # How many times to run the simulation
-horizon = 1000  # Defining the horizon
+num_sims = 1   # How many times to run the simulation 
+horizon = 1000  # Defining the first horizon
 
-# Define arms for female over 25, male over 25, and kids (under 25)
+# Defining arms for female over 25, male over 25, and kids (female/male under 25)
 arms_female_over_25 = [BernoulliArm(0.8), BernoulliArm(0.6), BernoulliArm(0.5), BernoulliArm(0.4), BernoulliArm(0.2)]
 arms_male_over_25 = list(reversed(arms_female_over_25))
 arms_female_under_25 = [BernoulliArm(0.2), BernoulliArm(0.4), BernoulliArm(0.8), BernoulliArm(0.6), BernoulliArm(0.5)]
-
-#new kid
 arms_male_under_25 = [BernoulliArm(0.2), BernoulliArm(0.4), BernoulliArm(0.8), BernoulliArm(0.6), BernoulliArm(0.5)]
 
 # Initialize UCB1 algorithm
-ucb = UCB1([], [], [], [], [], [], [], [])
+ucb = UCB([], [], [], [], [], [], [], [])
 
 # Function to simulate the algorithm
 def test_algorithm(algo, arms_female_over_25, arms_male_over_25, arms_female_under_25, arms_male_under_25, num_sims, horizon):
@@ -128,22 +127,19 @@ def test_algorithm(algo, arms_female_over_25, arms_male_over_25, arms_female_und
     sim_nums = [0 for _ in range(num_sims * horizon)]
     times = [0 for _ in range(num_sims * horizon)]
     
-    #Ignore this
+    #Ignore this loop as the nums_sims is always equal to 1
     for sim in range(num_sims):
-        algo.initialize(len(arms_female_over_25))  # Initialize for female arms
+        algo.initialize(len(arms_female_over_25))  # Initialize amount of arms
         
+        #Begging simulation
         for t in range(horizon):
             
             index = sim * horizon + t
             sim_nums[index] = sim
             times[index] = t + 1
             
-            # female_over_25
-            # male_over_25
             # Randomly choose user type for this round
             user_type = random.choice(['female_over_25', 'male_over_25', 'female_under_25', 'male_under_25'])
-            # For debugging purposes
-            # print(f"Current user is a {user_type}")
             
             # Select arm using UCB algorithm based on user type
             if user_type == 'female_over_25':
@@ -194,10 +190,10 @@ def test_algorithm(algo, arms_female_over_25, arms_male_over_25, arms_female_und
 # Define the logarithmic function
 # This function is used to generate the theoretical upper bound 
 # of the cumulative regret.
-def logarithmic_function(x):
-    return (math.sqrt(20*x*math.log(x))) if x > 0 else 0  # Avoid log(0)
+def draw_theoretical_bound(x):
+    return (4*math.sqrt(5*x*math.log(x))) if x > 0 else 0  # Avoid log(0)
 
-# Simulate the algorithm
+# Simulate the algorithm for horizon = 1000
 sim_nums, times, chosen_arms, rewards, cumulative_rewards, cumulative_regret = test_algorithm(ucb, arms_female_over_25, arms_male_over_25, arms_female_under_25, arms_male_under_25, num_sims, horizon)
 
 # New horizon
@@ -209,9 +205,10 @@ new_sim_nums, new_times, new_chosen_arms, new_rewards, new_cumulative_rewards, n
 # Plot results
 plt.figure(figsize=(10, 6))
 
-# Plot for the first horizon
+# Plot cumulative regret or the first horizon
+# Also plot linear function and the theoretical bound for comparison
 plt.subplot(2, 1, 1)
-plt.plot(range(1, num_sims * horizon + 1), [logarithmic_function(t + 1) for t in range(num_sims * horizon)], 
+plt.plot(range(1, num_sims * horizon + 1), [draw_theoretical_bound(t + 1) for t in range(num_sims * horizon)], 
         linestyle='--', label='f(x) = sqrt(x*log(x))', color='blue')
 plt.plot(range(num_sims * horizon), cumulative_regret, label='Cumulative Regret', color='red')
 plt.plot(range(num_sims * horizon), [t + 1 for t in range(num_sims * horizon)], linestyle='--', label='f(x) = x', color='green')
@@ -221,9 +218,10 @@ plt.title('UCB Algorithm Performance (T = 1000)')
 plt.legend()
 plt.grid(True)
 
-# Plot for the second horizon
+# Plot  cumulative regret for the second horizon
+# Also plot linear function and the theoretical bound for comparison
 plt.subplot(2, 1, 2)
-plt.plot(range(1, num_sims * new_horizon + 1), [logarithmic_function(t + 1) for t in range(num_sims * new_horizon)], 
+plt.plot(range(1, num_sims * new_horizon + 1), [draw_theoretical_bound(t + 1) for t in range(num_sims * new_horizon)], 
         linestyle='--', label='f(x) = sqrt(x*log(x))', color='blue')
 plt.plot(range(num_sims * new_horizon), new_cumulative_regret, label='Cumulative Regret (New Horizon)', color='red')
 plt.plot(range(num_sims * new_horizon), [t + 1 for t in range(num_sims * new_horizon)], linestyle='--', label='f(x) = x', color='green')
@@ -232,6 +230,5 @@ plt.ylabel('Cumulative Value')
 plt.title('UCB Algorithm Performance (T = 10000)')
 plt.legend()
 plt.grid(True)
-
 plt.tight_layout()
 plt.show()
