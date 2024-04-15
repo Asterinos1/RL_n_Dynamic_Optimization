@@ -2,19 +2,24 @@ import math
 import random
 import matplotlib.pyplot as plt
 
+# This code is a modification of Kenneth Foo Fangwei's code,
+# adjusted to the exercise's characteristics
+# https://kfoofw.github.io/bandit-theory-ucb-analysis/
+
 # UCB algorithm class
 # We keep track for the stats of each user type separately
 # female over 25 
 # male over 25 
 # male/female under 25
 class UCB():
+    
     def __init__(self, counts_female, values_female, counts_male, 
                 values_male, counts_kid, values_kid,counts_kid2, values_kids2 ):
         self.counts_female = counts_female
         self.values_female = values_female
         
-        self.counts_male = counts_male
-        self.values_male = values_male
+        self.counts_male = counts_male      # Counts: Represent recorded times when arm was pulled
+        self.values_male = values_male      # Values: Represent the known mean reward
         
         self.counts_kid = counts_kid
         self.values_kid = values_kid
@@ -36,7 +41,7 @@ class UCB():
         self.counts_kid2 = [0 for _ in range(n_arms)]
         self.values_kid2 = [0.0 for _ in range(n_arms)]
         
-    
+    # UCB arm selection based on max of UCB reward of each arm
     def select_arm(self, user_type):
         if user_type == 'female_over_25':
             counts = self.counts_female
@@ -67,6 +72,7 @@ class UCB():
 
         return ucb_values.index(max(ucb_values))
     
+    # Choose to update chosen arm and reward
     def update(self, chosen_arm, reward, user_type):
         if user_type == 'female_over_25':
             counts = self.counts_female
@@ -101,7 +107,7 @@ class BernoulliArm():
         else:
             return 1.0
 
-# Define parameters
+# Defining parameters
 num_sims = 1   # How many times to run the simulation 
 horizon = 1000  # Defining the first horizon
 
@@ -111,25 +117,28 @@ arms_male_over_25 = list(reversed(arms_female_over_25))
 arms_female_under_25 = [BernoulliArm(0.2), BernoulliArm(0.4), BernoulliArm(0.8), BernoulliArm(0.6), BernoulliArm(0.5)]
 arms_male_under_25 = [BernoulliArm(0.2), BernoulliArm(0.4), BernoulliArm(0.8), BernoulliArm(0.6), BernoulliArm(0.5)]
 
-# Initialize UCB1 algorithm
+# Initializing UCB1 algorithm
 ucb = UCB([], [], [], [], [], [], [], [])
 
 # Function to simulate the algorithm
 def test_algorithm(algo, arms_female_over_25, arms_male_over_25, arms_female_under_25, arms_male_under_25, num_sims, horizon):
-    chosen_arms = [0 for _ in range(num_sims * horizon)]
-    rewards = [0.0 for _ in range(num_sims * horizon)]
-    cumulative_rewards = [0.0 for _ in range(num_sims * horizon)]
-    cumulative_regret = [0.0 for _ in range(num_sims * horizon)]
-    sim_nums = [0 for _ in range(num_sims * horizon)]
-    times = [0 for _ in range(num_sims * horizon)]
     
-    #Ignore this loop as the nums_sims is always equal to 1
+    chosen_arms = [0 for _ in range(num_sims * horizon)] #  keep track of which arm is chosen at each time step in each simulation.
+    rewards = [0.0 for _ in range(num_sims * horizon)] # store the reward obtained from the chosen arm at each time step in each simulation.
+    cumulative_rewards = [0.0 for _ in range(num_sims * horizon)] # keep track of the cumulative rewards up to each time step in each simulation.
+    cumulative_regret = [0.0 for _ in range(num_sims * horizon)] # store the simulation number for each time step across all simulations.
+    sim_nums = [0 for _ in range(num_sims * horizon)] # Ignore this, it's for the simulation 
+    times = [0 for _ in range(num_sims * horizon)] # Ignore this, it's for the simulation 
+    
+    # We run our simulation 1 time so this for is kind of irrelevant in the current implementation
     for sim in range(num_sims):
-        algo.initialize(len(arms_female_over_25))  # Initialize amount of arms
+        
+        algo.initialize(len(arms_female_over_25)) 
         
         #Begging simulation
         for t in range(horizon):
             
+            # Updating some info for the simulation 
             index = sim * horizon + t
             sim_nums[index] = sim
             times[index] = t + 1
@@ -139,7 +148,11 @@ def test_algorithm(algo, arms_female_over_25, arms_male_over_25, arms_female_und
             
             # Select arm using UCB algorithm based on user type
             if user_type == 'female_over_25':
+                # Select an arm based on the info (ucb values) we have for selected user
                 chosen_arm = algo.select_arm('female_over_25')
+                # Show the user the article (arm) we have chosen based on our info
+                # Then see if the user's clicks it using the Bernoulli arm and save the reward
+                # Same logic for the rest user types
                 reward = arms_female_over_25[chosen_arm].draw()
             elif user_type == 'male_over_25':
                 chosen_arm = algo.select_arm('male_over_25')
@@ -151,6 +164,7 @@ def test_algorithm(algo, arms_female_over_25, arms_male_over_25, arms_female_und
                 chosen_arm = algo.select_arm('male_under_25')
                 reward = arms_male_under_25[chosen_arm].draw()
             
+            # Save info
             chosen_arms[index] = chosen_arm
             rewards[index] = reward
             
