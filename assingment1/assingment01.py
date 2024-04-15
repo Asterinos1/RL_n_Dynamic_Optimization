@@ -2,10 +2,6 @@ import math
 import random
 import matplotlib.pyplot as plt
 
-# This code is a modification of Kenneth Foo Fangwei's code,
-# adjusted to the exercise's characteristics
-# https://kfoofw.github.io/bandit-theory-ucb-analysis/
-
 # UCB algorithm class
 # We keep track for the stats of each user type separately
 # female over 25 
