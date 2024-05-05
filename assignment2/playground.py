@@ -14,6 +14,7 @@ stocks_data.columns = [f"Stock {i}" for i in range(10)]  # Naming columns as Sto
 stocks_data.head()
 
 def multiplicative_weights(data, learning_rate=0.05):
+    # Initialize parameters and lists to store results
     num_stocks = data.shape[1]
     weights = np.ones(num_stocks)
     cumulative_profit = []
@@ -21,15 +22,18 @@ def multiplicative_weights(data, learning_rate=0.05):
     total_profit = 0
     best_stock_profit = np.max(np.cumsum(data.values, axis=0)[-1])
 
+    # Iterate through each day's stock data
     for day in range(data.shape[0]):
         normalized_weights = weights / np.sum(weights)
         daily_returns = np.dot(normalized_weights, data.iloc[day])
         total_profit += daily_returns
         cumulative_profit.append(total_profit)
 
+        # Calculate regret as the difference between the best possible stock profit and actual profit
         regret = best_stock_profit - total_profit
         cumulative_regret.append(regret)
 
+         # Update weights based on the day's returns
         weights *= np.exp(learning_rate * data.iloc[day])
 
     return cumulative_profit, cumulative_regret
@@ -107,7 +111,9 @@ transaction_fees = np.array([0.005 * i for i in range(10)])
 # Apply the Multiplicative Weights algorithm with transaction fees
 cumulative_profit_no_fees, cumulative_profit_fees, cumulative_regret_no_fees, cumulative_regret_fees = multiplicative_weights_with_fees(stocks_data, transaction_fees)
 
-# Plotting the results with and without transaction fees
+# Plotting the result
+
+# Profit with fess - Alone
 plt.figure(figsize=(14, 6))
 plt.subplot(2,2,1)
 plt.plot(cumulative_profit_fees, label='Cumulative Profit (With Fees)')
@@ -117,6 +123,7 @@ plt.xlabel('Day')
 plt.ylabel('Profit (Euros)')
 plt.legend()
 
+# Regret with fess - Alone
 plt.subplot(2,2,2)
 plt.plot(cumulative_regret_fees, label='Cumulative Regret (With Fees)')
 plt.grid(True)
@@ -125,6 +132,7 @@ plt.xlabel('Day')
 plt.ylabel('Regret (Euros)')
 plt.legend()
 
+# Combined printing of profit
 plt.subplot(2, 2, 3)
 plt.plot(cumulative_profit_no_fees, label='Cumulative Profit (No Fees)')
 plt.plot(cumulative_profit_fees, label='Cumulative Profit (With Fees)')
@@ -134,6 +142,7 @@ plt.xlabel('Day')
 plt.ylabel('Profit (Euros)')
 plt.legend()
 
+# Combined printing of regret
 plt.subplot(2, 2, 4)
 plt.plot(cumulative_regret_no_fees, label='Cumulative Regret (No Fees)')
 plt.plot(cumulative_regret_fees, label='Cumulative Regret (With Fees)')
@@ -149,21 +158,26 @@ plt.show()
 # Modified Arm class to simulate stock returns
 class StockArm():
     def __init__(self, returns):
+        # Initialize with stock returns data
         self.returns = returns
 
     def draw(self, day):
+        # Simulate obtaining the return for a given day
         return self.returns[day]
 
 class UCBStockTrading():
     def __init__(self):
+        # Initialize lists to keep track of how often each arm is used and their estimated values
         self.counts = []
         self.values = []
 
     def initialize(self, n_arms):
+        # Start with zero counts and zero values for each stock arm
         self.counts = [0] * n_arms
         self.values = [0.0] * n_arms
 
     def select_arm(self):
+        # Select an arm based on UCB values
         n_arms = len(self.counts)
         for arm in range(n_arms):
             if self.counts[arm] == 0:
@@ -176,11 +190,14 @@ class UCBStockTrading():
         return np.argmax(ucb_values)
 
     def update(self, chosen_arm, reward):
+        # Update the selected arm's count and value based on the reward received
         self.counts[chosen_arm] += 1
         n = self.counts[chosen_arm]
         self.values[chosen_arm] = ((n - 1) / float(n)) * self.values[chosen_arm] + (1 / float(n)) * reward
 
 def simulate_ucb(stock_data, transaction_fees):
+    # Simulate the UCB algorithm for stock trading
+    # The algorithm is a modification from the 1st assignment
     num_days = stock_data.shape[0]
     num_stocks = stock_data.shape[1]
     arms = [StockArm(stock_data.iloc[:, i]) for i in range(num_stocks)]
@@ -210,6 +227,7 @@ cumulative_rewards, cumulative_regrets = simulate_ucb(stocks_data, transaction_f
 # Plotting
 plt.figure(figsize=(14, 8))
 
+# Plotting profit with fees using UCB - Alone
 plt.subplot(2, 2, 1)
 plt.plot(cumulative_rewards, label='Cumulative Profit (With Fees) - UCB')
 plt.grid(True)
@@ -218,6 +236,7 @@ plt.xlabel('Day')
 plt.ylabel('Profit (Euros)')
 plt.legend()
 
+# Plotting regret with fees using UCB - Alone
 plt.subplot(2, 2, 2)
 plt.plot(cumulative_regrets, label='Cumulative Regret (With Fees) - UCB', color='red')
 plt.grid(True)
@@ -226,6 +245,7 @@ plt.xlabel('Day')
 plt.ylabel('Regret (Euros)')
 plt.legend()
 
+# Combined printing of profit
 plt.subplot(2, 2, 3)
 plt.plot(cumulative_rewards, label='Cumulative Profit (With Fees) - UCB')
 plt.plot(cumulative_profit_no_fees, label='Cumulative Profit (No Fees)')
@@ -236,6 +256,7 @@ plt.xlabel('Day')
 plt.ylabel('Profit (Euros)')
 plt.legend()
 
+# Combined printing of regret
 plt.subplot(2, 2, 4)
 plt.plot(cumulative_regrets, label='Cumulative Regret (With Fees) - UCB', color='red')
 plt.plot(cumulative_regret_no_fees, label='Cumulative Regret (No Fees)')
