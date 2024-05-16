@@ -1,88 +1,155 @@
+import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-# Simulated stock_changes data, replace with actual data loading from 'stocks.csv'
-# stock_changes = np.random.randn(2000, 10) * 0.05  # 2000 days, 10 stocks
+# Load the data
+data = pd.read_csv('stocks.csv')
 
-# Load actual data from file
-import pandas as pd
-stock_changes = pd.read_csv('stocks.csv').values
+# Assuming the file has columns for each stock's daily percentage changes
+# e.g., stock_1, stock_2, ..., stock_K
 
-num_days, num_stocks = stock_changes.shape
-weights = np.ones(num_stocks)
-learning_rate = 0.1
-total_profits = []
-cumulative_profit = 0
+# Get the number of stocks (K) and days (T)
+K = data.shape[1]
+T = data.shape[0]
 
-for day in range(num_days):
-    weighted_profits = weights * stock_changes[day]
-    chosen_stock = np.argmax(weighted_profits)
-    profit = stock_changes[day, chosen_stock]
-    
-    # Update weights
-    weights *= np.exp(learning_rate * stock_changes[day])
-    weights /= np.sum(weights)  # Normalize weights
+def multiplicative_weights(data, eta=0.1):
+    K, T = data.shape[1], data.shape[0]
+    weights = np.ones(K)
+    cumulative_regret = np.zeros(T)
+    cumulative_profit = np.zeros(T)
 
-    cumulative_profit += profit
-    total_profits.append(cumulative_profit)
+    for t in range(T):
+        probabilities = weights / np.sum(weights)
+        chosen_stock = np.random.choice(K, p=probabilities)
+        reward = data.iloc[t, chosen_stock] / 100.0
 
-# Plotting cumulative profits
-plt.figure(figsize=(10, 5))
-plt.plot(total_profits, label='Cumulative Profits')
-plt.title('Cumulative Profits Over Time')
+        # Update weights
+        weights[chosen_stock] *= np.exp(eta * reward)
+
+        # Calculate regret and profit
+        best_possible = np.max(data.iloc[t] / 100.0)
+        cumulative_regret[t] = cumulative_regret[t - 1] + (best_possible - reward) if t > 0 else (best_possible - reward)
+        cumulative_profit[t] = cumulative_profit[t - 1] + reward if t > 0 else reward
+
+    return cumulative_regret, cumulative_profit
+
+# Run the algorithm
+cumulative_regret, cumulative_profit = multiplicative_weights(data)
+
+# Plot results
+plt.figure(figsize=(12, 5))
+plt.subplot(1, 2, 1)
+plt.plot(cumulative_regret)
+plt.title('Cumulative Regret')
 plt.xlabel('Days')
-plt.ylabel('Profit (Euros)')
-plt.legend()
-plt.show()
+plt.ylabel('Regret')
+plt.grid(True)
 
-transaction_costs = np.arange(0.5, 5.5, 0.5) / 100  # Transaction costs for 10 stocks
-
-cumulative_profit_with_costs = 0
-total_profits_with_costs = []
-
-for day in range(num_days):
-    weighted_profits = weights * (stock_changes[day] - transaction_costs)
-    chosen_stock = np.argmax(weighted_profits)
-    profit = stock_changes[day, chosen_stock] - transaction_costs[chosen_stock]
-    
-    weights *= np.exp(learning_rate * (stock_changes[day] - transaction_costs))
-    weights /= np.sum(weights)  # Normalize weights
-
-    cumulative_profit_with_costs += profit
-    total_profits_with_costs.append(cumulative_profit_with_costs)
-
-# Plotting comparison of cumulative profits with and without transaction costs
-plt.figure(figsize=(10, 5))
-plt.plot(total_profits, label='Cumulative Profits without Costs')
-plt.plot(total_profits_with_costs, label='Cumulative Profits with Costs')
-plt.title('Comparison of Cumulative Profits')
+plt.subplot(1, 2, 2)
+plt.plot(cumulative_profit)
+plt.title('Cumulative Profit')
 plt.xlabel('Days')
-plt.ylabel('Profit (Euros)')
-plt.legend()
+plt.ylabel('Profit')
+plt.grid(True)
+
 plt.show()
 
 
-cumulative_profit_bandit = 0
-total_profits_bandit = []
+def multiplicative_weights_with_fees(data, fees, eta=0.1):
+    K, T = data.shape[1], data.shape[0]
+    weights = np.ones(K)
+    cumulative_regret = np.zeros(T)
+    cumulative_profit = np.zeros(T)
 
-for day in range(num_days):
-    probabilities = weights / np.sum(weights)
-    chosen_stock = np.random.choice(np.arange(num_stocks), p=probabilities)
-    profit = stock_changes[day, chosen_stock] - transaction_costs[chosen_stock]
-    
-    # Update only the chosen stock's weight
-    weights[chosen_stock] *= np.exp(learning_rate * (profit))
-    weights /= np.sum(weights)  # Normalize weights
+    for t in range(T):
+        probabilities = weights / np.sum(weights)
+        chosen_stock = np.random.choice(K, p=probabilities)
+        reward = (data.iloc[t, chosen_stock] - fees[chosen_stock]) / 100.0
 
-    cumulative_profit_bandit += profit
-    total_profits_bandit.append(cumulative_profit_bandit)
+        # Update weights
+        weights[chosen_stock] *= np.exp(eta * reward)
 
-# Plotting comparison of cumulative profits with and without transaction costs
-plt.figure(figsize=(10, 5))
-plt.plot(total_profits_with_costs, label='Cumulative Profits with Costs (Experts)')
-plt.plot(total_profits_bandit, label='Cumulative Profits with Costs (Bandit)')
-plt.title('Comparison of Cumulative Profits')
+        # Calculate regret and profit
+        best_possible = np.max((data.iloc[t] - fees) / 100.0)
+        cumulative_regret[t] = cumulative_regret[t - 1] + (best_possible - reward) if t > 0 else (best_possible - reward)
+        cumulative_profit[t] = cumulative_profit[t - 1] + reward if t > 0 else reward
+
+    return cumulative_regret, cumulative_profit
+
+# Define transaction fees
+fees = np.linspace(0.005, 0.05, K) * 100  # 0.5%, 1%, ..., K%
+
+# Run the algorithm with fees
+cumulative_regret_fees, cumulative_profit_fees = multiplicative_weights_with_fees(data, fees)
+
+# Plot results
+plt.figure(figsize=(12, 5))
+plt.subplot(1, 2, 1)
+plt.plot(cumulative_regret, label='Without Fees')
+plt.plot(cumulative_regret_fees, label='With Fees')
+plt.title('Cumulative Regret')
 plt.xlabel('Days')
-plt.ylabel('Profit (Euros)')
+plt.ylabel('Regret')
+plt.grid(True)
 plt.legend()
+
+plt.subplot(1, 2, 2)
+plt.plot(cumulative_profit, label='Without Fees')
+plt.plot(cumulative_profit_fees, label='With Fees')
+plt.title('Cumulative Profit')
+plt.xlabel('Days')
+plt.ylabel('Profit')
+plt.grid(True)
+plt.legend()
+
+plt.show()
+
+# Task 3: Bandits with Transaction Fees
+def exp3(data, fees, eta=0.1, gamma=0.1):
+    K, T = data.shape[1], data.shape[0]
+    weights = np.ones(K)
+    cumulative_regret = np.zeros(T)
+    cumulative_profit = np.zeros(T)
+
+    for t in range(T):
+        probabilities = (1 - gamma) * (weights / np.sum(weights)) + (gamma / K)
+        chosen_stock = np.random.choice(K, p=probabilities)
+        reward = (data.iloc[t, chosen_stock] - fees[chosen_stock]) / 100.0
+
+        # Update weights
+        estimated_reward = reward / probabilities[chosen_stock]
+        weights[chosen_stock] *= np.exp(eta * estimated_reward)
+
+        # Calculate regret and profit
+        best_possible = np.max((data.iloc[t] - fees) / 100.0)
+        cumulative_regret[t] = cumulative_regret[t - 1] + (best_possible - reward) if t > 0 else (best_possible - reward)
+        cumulative_profit[t] = cumulative_profit[t - 1] + reward if t > 0 else reward
+
+    return cumulative_regret, cumulative_profit
+
+# Run the EXP3 algorithm with fees
+cumulative_regret_bandit, cumulative_profit_bandit = exp3(data, fees)
+
+# Plot results
+plt.figure(figsize=(12, 5))
+plt.subplot(1, 2, 1)
+plt.plot(cumulative_regret, label='Experts Without Fees')
+plt.plot(cumulative_regret_fees, label='Experts With Fees')
+plt.plot(cumulative_regret_bandit, label='Bandit With Fees')
+plt.title('Cumulative Regret')
+plt.xlabel('Days')
+plt.ylabel('Regret')
+plt.grid(True)
+plt.legend()
+
+plt.subplot(1, 2, 2)
+plt.plot(cumulative_profit, label='Experts Without Fees')
+plt.plot(cumulative_profit_fees, label='Experts With Fees')
+plt.plot(cumulative_profit_bandit, label='Bandit With Fees')
+plt.title('Cumulative Profit')
+plt.xlabel('Days')
+plt.ylabel('Profit')
+plt.grid(True)
+plt.legend()
+
 plt.show()
