@@ -35,15 +35,6 @@ Modify your MW algorithm to maximize the accumulated profit (gains minus the tra
 #### Task 3: Bandits with Transaction Fees
 Assume finally that you have a bandit setup, rather than an experts one. That is, at the end of day t you only learn the % increase/decrease of the stock you invested in that day (but not the other ones). Modify your previous algorithm to be applicable in this bandit setup and maximize the accumulated profit (minus transactions costs). Plot the cumulative regret and cumulative profits for this scenario and compare with the respective experts plots.
 
-### Instructions
-
-1. Load the `stocks.csv` data.
-2. Implement the Multiplicative Weights algorithm for Task 1.
-3. Modify the algorithm to account for transaction fees for Task 2.
-4. Adjust the algorithm to a bandit setup for Task 3.
-5. Generate the required plots for cumulative regret and cumulative profit for each task.
-6. Compare and analyze the results.
-
 ### Plots to Generate
 
 1. **Task 1**:
