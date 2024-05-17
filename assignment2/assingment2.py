@@ -44,7 +44,7 @@ cumulative_profit, cumulative_regret = multiplicative_weights(data)
 
 # Plotting the results
 plt.figure(figsize=(14, 6))
-plt.subplot(1, 2, 1)
+plt.subplot(1, 3, 1)
 plt.plot(cumulative_profit, label='Cumulative Profit')
 plt.grid(True)
 plt.title('Cumulative Profit Over Time')
@@ -52,10 +52,19 @@ plt.xlabel('Day')
 plt.ylabel('Profit (Euros)')
 plt.legend()
 
-plt.subplot(1, 2, 2)
+plt.subplot(1, 3, 2)
 plt.plot(cumulative_regret, label='Cumulative Regret')
 plt.grid(True)
 plt.title('Cumulative Regret Over Time')
+plt.xlabel('Day')
+plt.ylabel('Regret (Euros)')
+plt.legend()
+
+plt.subplot(1, 3, 3)
+plt.plot(cumulative_regret, label='Cumulative Regret')
+plt.plot(range(len(cumulative_regret)), range(len(cumulative_regret)), label='f(x) = x', linestyle='--')
+plt.grid(True)
+plt.title('Cumulative Regret vs. f(x) = x')
 plt.xlabel('Day')
 plt.ylabel('Regret (Euros)')
 plt.legend()
@@ -111,9 +120,9 @@ cumulative_profit_no_fees, cumulative_profit_fees, cumulative_regret_no_fees, cu
 
 # Plotting the result
 
-# Profit with fess - Alone
+# Profit with fees - Alone
 plt.figure(figsize=(14, 6))
-plt.subplot(2,2,1)
+plt.subplot(2, 3, 1)
 plt.plot(cumulative_profit_fees, label='Cumulative Profit (With Fees)')
 plt.grid(True)
 plt.title('Cumulative Profit Over Time')
@@ -121,8 +130,8 @@ plt.xlabel('Day')
 plt.ylabel('Profit (Euros)')
 plt.legend()
 
-# Regret with fess - Alone
-plt.subplot(2,2,2)
+# Regret with fees - Alone
+plt.subplot(2, 3, 2)
 plt.plot(cumulative_regret_fees, label='Cumulative Regret (With Fees)')
 plt.grid(True)
 plt.title('Cumulative Regret Over Time')
@@ -131,7 +140,7 @@ plt.ylabel('Regret (Euros)')
 plt.legend()
 
 # Combined printing of profit
-plt.subplot(2, 2, 3)
+plt.subplot(2, 3, 3)
 plt.plot(cumulative_profit_no_fees, label='Cumulative Profit (No Fees)')
 plt.plot(cumulative_profit_fees, label='Cumulative Profit (With Fees)')
 plt.grid(True)
@@ -141,11 +150,31 @@ plt.ylabel('Profit (Euros)')
 plt.legend()
 
 # Combined printing of regret
-plt.subplot(2, 2, 4)
+plt.subplot(2, 3, 4)
 plt.plot(cumulative_regret_no_fees, label='Cumulative Regret (No Fees)')
 plt.plot(cumulative_regret_fees, label='Cumulative Regret (With Fees)')
 plt.grid(True)
 plt.title('Cumulative Regret Over Time')
+plt.xlabel('Day')
+plt.ylabel('Regret (Euros)')
+plt.legend()
+
+# Plot regret with fees vs f(x) = x
+plt.subplot(2, 3, 5)
+plt.plot(cumulative_regret_fees, label='Cumulative Regret (With Fees)')
+plt.plot(range(len(cumulative_regret_fees)), range(len(cumulative_regret_fees)), label='f(x) = x', linestyle='--')
+plt.grid(True)
+plt.title('Cumulative Regret (With Fees) vs. f(x) = x')
+plt.xlabel('Day')
+plt.ylabel('Regret (Euros)')
+plt.legend()
+
+# Plot regret without fees vs f(x) = x
+plt.subplot(2, 3, 6)
+plt.plot(cumulative_regret_no_fees, label='Cumulative Regret (No Fees)')
+plt.plot(range(len(cumulative_regret_no_fees)), range(len(cumulative_regret_no_fees)), label='f(x) = x', linestyle='--')
+plt.grid(True)
+plt.title('Cumulative Regret (No Fees) vs. f(x) = x')
 plt.xlabel('Day')
 plt.ylabel('Regret (Euros)')
 plt.legend()
@@ -227,7 +256,7 @@ cumulative_rewards, cumulative_regrets = simulate_ucb(stocks_data, transaction_f
 plt.figure(figsize=(14, 8))
 
 # Plotting profit with fees using UCB - Alone
-plt.subplot(2, 2, 1)
+plt.subplot(2, 3, 1)
 plt.plot(cumulative_rewards, label='Cumulative Profit (With Fees) - UCB')
 plt.grid(True)
 plt.title('Cumulative Profit from UCB Algorithm')
@@ -236,7 +265,7 @@ plt.ylabel('Profit (Euros)')
 plt.legend()
 
 # Plotting regret with fees using UCB - Alone
-plt.subplot(2, 2, 2)
+plt.subplot(2, 3, 2)
 plt.plot(cumulative_regrets, label='Cumulative Regret (With Fees) - UCB', color='red')
 plt.grid(True)
 plt.title('Cumulative Regret from UCB Algorithm')
@@ -245,7 +274,7 @@ plt.ylabel('Regret (Euros)')
 plt.legend()
 
 # Combined printing of profit
-plt.subplot(2, 2, 3)
+plt.subplot(2, 3, 3)
 plt.plot(cumulative_rewards, label='Cumulative Profit (With Fees) - UCB')
 plt.plot(cumulative_profit_no_fees, label='Cumulative Profit (No Fees)')
 plt.plot(cumulative_profit_fees, label='Cumulative Profit (With Fees)', linestyle='--')
@@ -256,12 +285,22 @@ plt.ylabel('Profit (Euros)')
 plt.legend()
 
 # Combined printing of regret
-plt.subplot(2, 2, 4)
+plt.subplot(2, 3, 4)
 plt.plot(cumulative_regrets, label='Cumulative Regret (With Fees) - UCB', color='red')
 plt.plot(cumulative_regret_no_fees, label='Cumulative Regret (No Fees)')
 plt.plot(cumulative_regret_fees, label='Cumulative Regret (With Fees)', linestyle='--')
 plt.grid(True)
 plt.title('Cumulative Regret from UCB Algorithm')
+plt.xlabel('Day')
+plt.ylabel('Regret (Euros)')
+plt.legend()
+
+# Plot regret with fees vs f(x) = x
+plt.subplot(2, 3, 5)
+plt.plot(cumulative_regrets, label='Cumulative Regret (With Fees) - UCB', color='red')
+plt.plot(range(len(cumulative_regrets)), range(len(cumulative_regrets)), label='f(x) = x', linestyle='--')
+plt.grid(True)
+plt.title('Cumulative Regret (With Fees) vs. f(x) = x')
 plt.xlabel('Day')
 plt.ylabel('Regret (Euros)')
 plt.legend()
