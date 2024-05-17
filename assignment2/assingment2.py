@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 
-# Load the data from the CSV file to see the first few rows
+# Load the data from the CSV file
 file_path = 'stocks.csv'
 stocks_data = pd.read_csv(file_path, header=None)  
 stocks_data.columns = [f"Stock {i}" for i in range(10)]  # Naming columns as Stock 0, Stock 1, ..., Stock 9
