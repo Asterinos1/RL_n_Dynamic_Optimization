@@ -1,6 +1,4 @@
-# Day Trading in the Stock Market
-
-## Assignment 2: Optimizing Stock Investments Using Bandit Algorithms
+# Assignment 2: Day Trading in the Stock Market
 
 ### Description
 
