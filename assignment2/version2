@@ -1,0 +1,175 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import math 
+
+# Load the data
+data = pd.read_csv('C:\\Users\\akara\\Desktop\\rl_py_workspace\\project2\\stocks.csv')
+
+# Corrected version, MW updates all weights for task 1 and 2
+
+# Get the number of stocks (K) and days (T)
+K = data.shape[1]
+T = data.shape[0]
+
+# Optimal eta according to the formula 
+optimal_eta = math.sqrt(math.log(K) / T)
+
+def multiplicative_weights_experts(data, eta=optimal_eta):
+    K, T = data.shape[1], data.shape[0]
+    weights = np.ones(K)
+    cumulative_regret = np.zeros(T)
+    cumulative_profit = np.zeros(T)
+
+    for t in range(T):
+        probabilities = weights / np.sum(weights)
+        chosen_stock = np.random.choice(K, p=probabilities)
+        reward = data.iloc[t, chosen_stock]
+        weights *= np.exp(eta * data.iloc[t])
+
+        best_possible = np.max(data.iloc[t])
+        cumulative_regret[t] = cumulative_regret[t - 1] + (best_possible - reward) if t > 0 else (best_possible - reward)
+        cumulative_profit[t] = cumulative_profit[t - 1] + reward if t > 0 else reward
+
+    return cumulative_regret, cumulative_profit
+
+def multiplicative_weights_bandit(data, eta=optimal_eta):
+    K, T = data.shape[1], data.shape[0]
+    weights = np.ones(K)
+    cumulative_regret = np.zeros(T)
+    cumulative_profit = np.zeros(T)
+
+    for t in range(T):
+        probabilities = weights / np.sum(weights)
+        chosen_stock = np.random.choice(K, p=probabilities)
+        reward = data.iloc[t, chosen_stock]
+        estimated_loss = np.zeros(K)
+        estimated_loss[chosen_stock] = reward / probabilities[chosen_stock]
+
+        weights *= np.exp(eta * estimated_loss)
+        best_possible = np.max(data.iloc[t])
+        cumulative_regret[t] = cumulative_regret[t - 1] + (best_possible - reward) if t > 0 else (best_possible - reward)
+        cumulative_profit[t] = cumulative_profit[t - 1] + reward if t > 0 else reward
+
+    return cumulative_regret, cumulative_profit
+
+# Run the Multiplicative Weights algorithm without transaction fees
+cumulative_regret_experts, cumulative_profit_experts = multiplicative_weights_experts(data)
+cumulative_regret_bandit, cumulative_profit_bandit = multiplicative_weights_bandit(data)
+
+# Plot the cumulative regret and profit for both settings
+plt.figure(figsize=(16, 5))
+
+plt.subplot(1, 3, 1)
+plt.plot(cumulative_regret_experts, label='Experts Setting')
+plt.plot(cumulative_regret_bandit, label='Bandit Setting')
+plt.title('Cumulative Regret')
+plt.xlabel('Days')
+plt.ylabel('Regret')
+plt.grid(True)
+plt.legend()
+
+plt.subplot(1, 3, 2)
+plt.plot(cumulative_regret_experts, label='Experts Setting')
+plt.plot(cumulative_regret_bandit, label='Bandit Setting')
+plt.plot(np.arange(T), np.arange(T), label='f(x) = x', linestyle='--')
+plt.title('Cumulative Regret vs Linear limit')
+plt.xlabel('Days')
+plt.ylabel('Regret')
+plt.grid(True)
+plt.legend()
+
+plt.subplot(1, 3, 3)
+plt.plot(cumulative_profit_experts, label='Experts Setting')
+plt.plot(cumulative_profit_bandit, label='Bandit Setting')
+plt.title('Cumulative Profit')
+plt.xlabel('Days')
+plt.ylabel('Profit')
+plt.grid(True)
+plt.legend()
+
+plt.show()
+
+def multiplicative_weights_with_fees(data, fees, eta=optimal_eta):
+    K, T = data.shape[1], data.shape[0]
+    weights = np.ones(K)
+    cumulative_regret = np.zeros(T)
+    cumulative_profit = np.zeros(T)
+
+    for t in range(T):
+        probabilities = weights / np.sum(weights)
+        chosen_stock = np.random.choice(K, p=probabilities)
+        reward = data.iloc[t, chosen_stock] - fees[chosen_stock]
+        weights *= np.exp(eta * (data.iloc[t] - fees))
+
+        best_possible = np.max(data.iloc[t] - fees)
+        cumulative_regret[t] = cumulative_regret[t - 1] + (best_possible - reward) if t > 0 else (best_possible - reward)
+        cumulative_profit[t] = cumulative_profit[t - 1] + reward if t > 0 else reward
+
+    return cumulative_regret, cumulative_profit
+
+def multiplicative_weights_bandit_with_fees(data, fees, eta=optimal_eta):
+    K, T = data.shape[1], data.shape[0]
+    weights = np.ones(K)
+    cumulative_regret = np.zeros(T)
+    cumulative_profit = np.zeros(T)
+
+    for t in range(T):
+        probabilities = weights / np.sum(weights)
+        chosen_stock = np.random.choice(K, p=probabilities)
+        reward = data.iloc[t, chosen_stock] - fees[chosen_stock]
+        estimated_loss = np.zeros(K)
+        estimated_loss[chosen_stock] = reward / probabilities[chosen_stock]
+
+        weights *= np.exp(eta * estimated_loss)
+        best_possible = np.max(data.iloc[t] - fees)
+        cumulative_regret[t] = cumulative_regret[t - 1] + (best_possible - reward) if t > 0 else (best_possible - reward)
+        cumulative_profit[t] = cumulative_profit[t - 1] + reward if t > 0 else reward
+
+        # Reset weights to avoid premature convergence, simulating a bandit setting
+        weights = np.ones(K)
+
+    return cumulative_regret, cumulative_profit
+
+# Define transaction fees as a linear range from 0.5% to 5% with 0.05% step
+fees = np.linspace(0.005, 0.05, K)
+
+# Run the Multiplicative Weights algorithm with transaction fees
+cumulative_regret_fees, cumulative_profit_fees = multiplicative_weights_with_fees(data, fees)
+cumulative_regret_bandit_fees, cumulative_profit_bandit_fees = multiplicative_weights_bandit_with_fees(data, fees)
+
+# Plot the cumulative regret and profit for both settings with fees
+plt.figure(figsize=(16, 5))
+
+plt.subplot(1, 3, 1)
+plt.plot(cumulative_regret_experts, label='Experts Without Fees')
+plt.plot(cumulative_regret_fees, label='Experts With Fees')
+plt.plot(cumulative_regret_bandit_fees, label='Bandits With Fees')
+plt.title('Cumulative Regret')
+plt.xlabel('Days')
+plt.ylabel('Regret')
+plt.grid(True)
+plt.legend()
+
+plt.subplot(1, 3, 2)
+plt.plot(cumulative_regret_experts, label='Experts Without Fees')
+plt.plot(cumulative_regret_fees, label='Experts With Fees')
+plt.plot(cumulative_regret_bandit_fees, label='Bandits With Fees')
+plt.plot(np.arange(T), np.arange(T), label='f(x) = x', linestyle='--')
+plt.title('Cumulative Regret vs Linear limit')
+plt.xlabel('Days')
+plt.ylabel('Regret')
+plt.grid(True)
+plt.legend()
+
+plt.subplot(1, 3, 3)
+plt.plot(cumulative_profit_experts, label='Experts Without Fees')
+plt.plot(cumulative_profit_fees, label='Experts With Fees')
+plt.plot(cumulative_profit_bandit_fees, label='Bandits With Fees')
+plt.title('Cumulative Profit')
+plt.xlabel('Days')
+plt.ylabel('Profit')
+plt.grid(True)
+plt.legend()
+
+plt.show()
