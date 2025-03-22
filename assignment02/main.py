@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-#student id -> 2020030107 -> seed:07
+# student id -> 2020030107 -> seed:07
 
 T = 1000  
 alpha = 0.5
@@ -19,21 +19,13 @@ prices = [
 
 np.random.seed(7)  
 weights = np.ones(5)  
-eta = 0.1
+eta = 0.1  
 
 rewards = np.zeros(T)
 picked_prices = np.zeros(T)
 cumulative_rewards = np.zeros(T)
 regrets = np.zeros(T)
 
-"""
-Regarding question 1:
-
-Since the customer always agrees to pay after choosing,
-it would be best to always suggest him the biggest price.
-However we are tasked to assume this is not true
-Then how do we proceed?
-"""
 best_possible_reward = np.max(prices)
 
 for t in range(T):
@@ -42,24 +34,25 @@ for t in range(T):
     chosen_price_index = np.random.choice(5, p=probabilities)
     picked_prices[t] = prices[chosen_price_index]
     
-    
     competitor_price = np.random.uniform(0, 4)
-    user_picked_you = np.random.choice([True, False])  
+    user_picked_you = np.random.choice([True, False])
 
     reward = prices[chosen_price_index] if user_picked_you else 0
     rewards[t] = reward
 
+    #setting the loss function values.
+    if reward > 0:
+        l_t = 0  #no loss if we actually recieve reward.
+    else:
+        l_t = 1  #we have loss if we don't get the reward.
     
-    if reward > 0:  # only update if reward is earned
-        weights[chosen_price_index] *= np.exp(eta * reward / np.sum(prices))
-    
+    #w(t+1) = w(t) * (1 - eta)^l(t)
+    weights[chosen_price_index] *= (1 - eta) ** l_t
     cumulative_rewards[t] = np.sum(rewards[:t + 1])
-    
     total_possible_reward = best_possible_reward * (t + 1)
     regrets[t] = total_possible_reward - cumulative_rewards[t]
 
     print(f"Iteration {t+1}: Weights: {weights}")
-
 
 plt.plot(cumulative_rewards, label='Cumulative Reward')
 plt.plot(regrets, label='Regret', linestyle='--')
