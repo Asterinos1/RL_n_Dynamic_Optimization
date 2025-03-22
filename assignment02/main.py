@@ -71,6 +71,7 @@ plt.plot(regrets, label='Regret', linestyle='--')
 plt.title('Profit and Regret over time')
 plt.xlabel('Rounds (t)')
 plt.ylabel('Cumulative Value')
+plt.grid(True)
 plt.legend()
 plt.show()
 
