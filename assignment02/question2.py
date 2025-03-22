@@ -19,7 +19,7 @@ prices = [
 
 np.random.seed(7)  
 weights = np.ones(5)  
-eta = 0.1
+eta = 0.1  
 
 rewards = np.zeros(T)
 picked_prices = np.zeros(T)
@@ -46,17 +46,23 @@ for t in range(T):
             reward = 0
 
     rewards[t] = reward
-    if reward > 0:  # only update if reward is earned
-        weights[chosen_price_index] *= np.exp(eta * reward / np.sum(prices))
+
+    
+    if reward > 0:
+        l_t = 0  
+    else:
+        l_t = 1  
+
+    #w(t+1) = w(t) * (1 - eta)^l(t)
+    weights[chosen_price_index] *= (1 - eta) ** l_t
     
     cumulative_rewards[t] = np.sum(rewards[:t + 1])
     total_possible_reward = best_possible_reward * (t + 1)
     regrets[t] = total_possible_reward - cumulative_rewards[t]
 
-    #debbuging print to check weight prices.
+    #debugging print to check weight prices
     print(f"Iteration {t+1}: Weights: {weights}")
 
-# Plot the cumulative reward and regret
 plt.plot(cumulative_rewards, label='Cumulative Reward')
 plt.plot(regrets, label='Regret', linestyle='--')
 plt.title('Profit and Regret over time')
@@ -66,7 +72,6 @@ plt.grid(True)
 plt.legend()
 plt.show()
 
-# Print final observations
 final_probabilities = weights / np.sum(weights)
 print("Final weights:", weights)
 print("Final price probabilities:", final_probabilities)
