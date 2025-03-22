@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 #student id -> 2020030107 -> seed:07
 
-T = 100  
+T = 1000  
 alpha = 0.5
 beta = 1.5
 price_options = ['p0', 'p1', 'p2', 'p3', 'p4']
@@ -42,30 +42,25 @@ for t in range(T):
     chosen_price_index = np.random.choice(5, p=probabilities)
     picked_prices[t] = prices[chosen_price_index]
     
-    # User picks between you and competitor randomly
+    
     competitor_price = np.random.uniform(0, 4)
-    user_picked_you = np.random.choice([True, False])  # Random choice
+    user_picked_you = np.random.choice([True, False])  
 
-    # If user picks you, you earn the chosen price, otherwise you get 0
     reward = prices[chosen_price_index] if user_picked_you else 0
     rewards[t] = reward
 
-    # Update MW weights
+    
     if reward > 0:  # only update if reward is earned
         weights[chosen_price_index] *= np.exp(eta * reward / np.sum(prices))
     
-    # Store cumulative rewards
     cumulative_rewards[t] = np.sum(rewards[:t + 1])
     
-    # Calculate regret as the difference between the best possible reward and actual cumulative reward
     total_possible_reward = best_possible_reward * (t + 1)
     regrets[t] = total_possible_reward - cumulative_rewards[t]
 
-    # Print weights after each iteration
     print(f"Iteration {t+1}: Weights: {weights}")
 
 
-# Plot the cumulative reward
 plt.plot(cumulative_rewards, label='Cumulative Reward')
 plt.plot(regrets, label='Regret', linestyle='--')
 plt.title('Profit and Regret over time')
@@ -75,7 +70,6 @@ plt.grid(True)
 plt.legend()
 plt.show()
 
-# Print some final observations
 final_probabilities = weights / np.sum(weights)
 print("Final weights:", weights)
 print("Final price probabilities:", final_probabilities)
