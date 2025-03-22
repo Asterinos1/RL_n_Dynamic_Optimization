@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 # student id -> 2020030107 -> seed:07
 
-T = 1000  
+T = 10000  
 alpha = 0.5
 beta = 1.5
 price_options = ['p0', 'p1', 'p2', 'p3', 'p4']
@@ -41,24 +41,31 @@ for t in range(T):
     rewards[t] = reward
 
     #setting the loss function values.
+    #this was based on the professor's pdf regarding the experts.
     if reward > 0:
         l_t = 0  #no loss if we actually recieve reward.
     else:
         l_t = 1  #we have loss if we don't get the reward.
     
     #w(t+1) = w(t) * (1 - eta)^l(t)
-    weights[chosen_price_index] *= (1 - eta) ** l_t
+    #weights[chosen_price_index] *= (1 - eta) ** l_t
+    #update all weights.
+    for i in range(len(weights)):
+        weights[i] *= (1 - eta) ** (1 if i == chosen_price_index and reward == 0 else 0)
+
+
+
     cumulative_rewards[t] = np.sum(rewards[:t + 1])
     total_possible_reward = best_possible_reward * (t + 1)
     regrets[t] = total_possible_reward - cumulative_rewards[t]
 
-    print(f"Iteration {t+1}: Weights: {weights}")
+    print(f"Iteration {t+1}:\nWeights: {weights}")
 
-plt.plot(cumulative_rewards, label='Cumulative Reward')
-plt.plot(regrets, label='Regret', linestyle='--')
-plt.title('Profit and Regret over time')
-plt.xlabel('Rounds (t)')
-plt.ylabel('Cumulative Value')
+plt.plot(cumulative_rewards, label='total profit')
+plt.plot(regrets, label='regret', linestyle='--')
+plt.title('profit and regret over time')
+plt.xlabel('rounds')
+plt.ylabel('total profit')
 plt.grid(True)
 plt.legend()
 plt.show()
